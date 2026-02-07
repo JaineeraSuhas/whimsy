@@ -1,0 +1,26 @@
+
+> spiral-replica@0.1.0 lint
+> eslint
+
+
+C:\Users\ASUS\.gemini\antigravity\scratch\spiral-replica\src\app\api\search\route.ts
+  32:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\ASUS\.gemini\antigravity\scratch\spiral-replica\src\app\page.tsx
+   77:48  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  129:37  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  129:51  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\ASUS\.gemini\antigravity\scratch\spiral-replica\src\components\landing\Hero.tsx
+  118:33  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  148:37  warning  'index' is defined but never used                                @typescript-eslint/no-unused-vars
+
+C:\Users\ASUS\.gemini\antigravity\scratch\spiral-replica\src\components\spiral\SpiralCanvas.tsx
+   77:36  error    React Hook "useThree" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function  react-hooks/rules-of-hooks
+  265:13  warning  'camera' is assigned a value but never used                                                                                                         @typescript-eslint/no-unused-vars
+  269:11  warning  'cameraPosition' is assigned a value but never used                                                                                                 @typescript-eslint/no-unused-vars
+  273:15  warning  'angle' is assigned a value but never used                                                                                                          @typescript-eslint/no-unused-vars
+
+Γ£û 11 problems (7 errors, 4 warnings)
+
