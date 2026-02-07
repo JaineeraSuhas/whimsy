@@ -5,7 +5,7 @@ import { Photo } from './db';
 
 let detector: faceDetection.FaceDetector | null = null;
 const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
-const detectorConfig: faceDetection.MediaPipeFaceDetectorMediaPipeModelConfig = {
+const detectorConfig: faceDetection.MediaPipeFaceDetectorTfjsModelConfig = {
     runtime: 'tfjs', // or 'mediapipe'
     maxFaces: 10,
 };

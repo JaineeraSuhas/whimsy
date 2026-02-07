@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion, AnimatePresence, MotionConfig } from "motion/react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, type LucideIcon } from "lucide-react"
 
 // Utility function for className merging
 function cn(...classes: (string | boolean | undefined)[]) {
@@ -10,7 +10,7 @@ function cn(...classes: (string | boolean | undefined)[]) {
 }
 
 // Custom hook for click outside detection
-function useClickAway(ref: React.RefObject<HTMLElement>, handler: (event: MouseEvent | TouchEvent) => void) {
+function useClickAway<T extends HTMLElement = HTMLElement>(ref: React.RefObject<T | null>, handler: (event: MouseEvent | TouchEvent) => void) {
     React.useEffect(() => {
         const listener = (event: MouseEvent | TouchEvent) => {
             if (!ref.current || ref.current.contains(event.target as Node)) {
@@ -60,7 +60,7 @@ Button.displayName = "Button"
 interface Category {
     id: string
     label: string
-    icon: React.ElementType
+    icon: LucideIcon
     color: string
 }
 
@@ -69,7 +69,7 @@ const IconWrapper = ({
     icon: Icon,
     isHovered,
     color,
-}: { icon: React.ElementType; isHovered: boolean; color: string }) => (
+}: { icon: LucideIcon; isHovered: boolean; color: string }) => (
     <motion.div
         className="w-4 h-4 mr-2 relative"
         initial={false}
@@ -109,7 +109,7 @@ const itemVariants = {
         y: 0,
         transition: {
             duration: 0.3,
-            ease: [0.25, 0.1, 0.25, 1],
+            ease: [0.25, 0.1, 0.25, 1] as const,
         },
     },
 }
@@ -130,7 +130,7 @@ export function FluidDropdown({ categories, value, onChange, className }: FluidD
     const [hoveredCategory, setHoveredCategory] = React.useState<string | null>(null)
     const dropdownRef = React.useRef<HTMLDivElement>(null)
 
-    useClickAway(dropdownRef, () => setIsOpen(false))
+    useClickAway<HTMLDivElement>(dropdownRef, () => setIsOpen(false))
 
     React.useEffect(() => {
         const category = categories.find(c => c.id === value)
