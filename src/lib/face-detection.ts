@@ -78,10 +78,16 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
         console.log('[Face Detection] Detecting faces...');
 
         // Detect faces with landmarks and descriptors
-        const detections = await faceapi
+        const detectionPromise = faceapi
             .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.4 }))
             .withFaceLandmarks()
             .withFaceDescriptors();
+
+        // 10-second timeout for detection
+        const detections = await Promise.race([
+            detectionPromise,
+            new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error('Detection timed out')), 10000))
+        ]);
 
         console.log(`[Face Detection] Found ${detections.length} faces`);
 

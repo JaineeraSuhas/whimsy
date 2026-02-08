@@ -25,11 +25,14 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                     // @ts-ignore
                     const exifDate = EXIF.getTag(this, "DateTimeOriginal");
                     if (exifDate) {
-                        // Parse EXIF date format: "YYYY:MM:DD HH:MM:SS"
-                        const [datePart, timePart] = exifDate.split(" ");
-                        const [year, month, day] = datePart.split(":");
-                        const [hour, minute, second] = timePart.split(":");
-                        date = new Date(year, month - 1, day, hour, minute, second).getTime();
+                        try {
+                            const [datePart, timePart] = exifDate.split(" ");
+                            const [year, month, day] = datePart.split(":");
+                            const [hour, minute, second] = timePart.split(":");
+                            date = new Date(year, month - 1, day, hour, minute, second).getTime();
+                        } catch (e) {
+                            console.warn("Error parsing EXIF date", e);
+                        }
                     }
                 });
 
@@ -50,10 +53,13 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                     ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                     canvas.toBlob(async (thumbnailBlob) => {
-                        if (!thumbnailBlob) return;
+                        if (!thumbnailBlob) {
+                            URL.revokeObjectURL(objectUrl);
+                            resolve();
+                            return;
+                        }
 
                         const photoId = uuidv4();
-
                         const newPhoto: Photo = {
                             id: photoId,
                             blob: file, // Store original
@@ -69,22 +75,30 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                             }
                         };
 
-                        // Save photo first
-                        await savePhoto(newPhoto);
-
-                        // Then detect faces in background
-                        setStatusMessage('Detecting faces...');
                         try {
+                            // Save photo first
+                            await savePhoto(newPhoto);
+
+                            // Then detect faces in background
+                            setStatusMessage('Detecting faces...');
                             await processFacesInPhoto(newPhoto);
                         } catch (e) {
-                            console.warn("Face detection failed for", file.name, e);
+                            console.warn("Processing failed for", file.name, e);
+                            setStatusMessage('Skipping faulty image...');
+                        } finally {
+                            URL.revokeObjectURL(objectUrl);
+                            resolve();
                         }
-
-                        URL.revokeObjectURL(objectUrl);
-                        resolve();
 
                     }, 'image/jpeg', 0.9);
                 };
+
+                img.onerror = () => {
+                    console.error("Failed to load image for thumbnail");
+                    URL.revokeObjectURL(objectUrl);
+                    resolve();
+                };
+
                 img.src = objectUrl;
 
             } catch (error) {
