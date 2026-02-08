@@ -48,8 +48,8 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                         file.type === 'image/heif';
 
                     if (isHeic) {
-                        setStatusMessage(`Converting ${file.name} from HEIC...`);
-                        console.log(`[Upload] Converting HEIC file: ${file.name}`);
+                        // User requested seamless experience: generic status
+                        setStatusMessage(`Processing ${file.name}...`);
 
                         const heic2anyModule = await import('heic2any');
                         const heic2any = heic2anyModule.default;
@@ -57,7 +57,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                         const convertedBlob = await heic2any({
                             blob: file,
                             toType: 'image/jpeg',
-                            quality: 0.9
+                            quality: 0.75 // Lower quality slightly to prevent mobile Safari OOM
                         });
 
                         const jpegBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
