@@ -250,8 +250,8 @@ export default function SpiralCanvas({ photos }: { photos: Photo[] }) {
 
     return (
         <div className="w-full h-full relative">
-            {/* HUD / Controls Overlay */}
-            <div className="absolute left-8 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-4 pointer-events-none">
+            {/* HUD / Controls Overlay - Hidden on Mobile */}
+            <div className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-10 flex-col gap-4 pointer-events-none">
                 {/* Layout Circle Menu */}
                 <div className="pointer-events-auto">
                     <CircleMenu
@@ -297,8 +297,8 @@ export default function SpiralCanvas({ photos }: { photos: Photo[] }) {
                 </div>
             </div>
 
-            {/* Settings - Positioned at Bottom Left */}
-            <div className="absolute bottom-24 left-8 z-10 flex flex-col gap-3 pointer-events-none">
+            {/* Settings - Positioned at Bottom Left - Hidden on Mobile */}
+            <div className="hidden md:flex absolute bottom-24 left-8 z-10 flex-col gap-3 pointer-events-none">
                 {/* Settings Button */}
                 <button
                     onClick={() => setShowSettings(!showSettings)}
