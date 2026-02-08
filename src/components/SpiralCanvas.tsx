@@ -9,8 +9,54 @@ import { getAllPhotos, Photo, clearAllPhotos } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, LayoutGrid, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
-// Simple global texture cache to prevent redundant loading and VRAM pressure
-const textureCache = new Map<string, THREE.Texture>();
+// Robust Singleton Texture Manager to handle loading concurrency and stable caching
+class TextureManager {
+    private cache = new Map<string, THREE.Texture>();
+    private loading = new Map<string, Promise<THREE.Texture>>();
+
+    async getTexture(photo: Photo, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
+        // 1. Check cache
+        if (this.cache.has(photo.id)) return this.cache.get(photo.id)!;
+
+        // 2. Check if already loading to deduplicate
+        if (this.loading.has(photo.id)) return this.loading.get(photo.id)!;
+
+        // 3. Create loading promise
+        const loadPromise = new Promise<THREE.Texture>((resolve, reject) => {
+            const url = URL.createObjectURL(photo.thumbnail);
+            const loader = new THREE.TextureLoader();
+
+            loader.load(
+                url,
+                (tex) => {
+                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                    tex.anisotropy = Math.min(maxAnisotropy, 16);
+                    tex.minFilter = THREE.LinearMipmapLinearFilter;
+                    tex.magFilter = THREE.LinearFilter;
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.generateMipmaps = true;
+                    tex.needsUpdate = true;
+
+                    this.cache.set(photo.id, tex);
+                    this.loading.delete(photo.id);
+                    URL.revokeObjectURL(url);
+                    resolve(tex);
+                },
+                undefined,
+                (err) => {
+                    URL.revokeObjectURL(url);
+                    this.loading.delete(photo.id);
+                    reject(err);
+                }
+            );
+        });
+
+        this.loading.set(photo.id, loadPromise);
+        return loadPromise;
+    }
+}
+
+const globalTextureManager = new TextureManager();
 
 function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
@@ -19,38 +65,16 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
     const { gl } = useThree();
 
     useEffect(() => {
-        // Check cache first
-        if (textureCache.has(photo.id)) {
-            setTexture(textureCache.get(photo.id)!);
-            return;
-        }
+        let isMounted = true;
 
-        const url = URL.createObjectURL(photo.thumbnail);
-        const loader = new THREE.TextureLoader();
+        globalTextureManager.getTexture(photo, gl)
+            .then(tex => {
+                if (isMounted) setTexture(tex);
+            })
+            .catch(err => console.error(`Failed to load texture for ${photo.id}:`, err));
 
-        loader.load(
-            url,
-            (tex) => {
-                const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                tex.anisotropy = Math.min(maxAnisotropy, 16);
-                tex.minFilter = THREE.LinearMipmapLinearFilter;
-                tex.magFilter = THREE.LinearFilter;
-                tex.colorSpace = THREE.SRGBColorSpace;
-                tex.generateMipmaps = true;
-                tex.needsUpdate = true;
-
-                textureCache.set(photo.id, tex);
-                setTexture(tex);
-                URL.revokeObjectURL(url);
-            },
-            undefined,
-            (error) => {
-                console.error('Error loading texture:', error);
-                URL.revokeObjectURL(url);
-            }
-        );
-        // We persist textures in the cache to avoid re-loading/white blocks on mobile
-    }, [photo.id, photo.thumbnail, gl]);
+        return () => { isMounted = false; };
+    }, [photo.id, gl]); // Minimal dependency strictly on ID
 
     useFrame((state) => {
         if (meshRef.current) {
