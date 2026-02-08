@@ -20,55 +20,64 @@ class GlobalTextureCache {
     }
 }
 
-// 2. High-Performance Buffered Loader (Robust)
-// Uses ImageBitmap for off-thread decoding and limits concurrency to prevent UI stutter
+// 2. High-Performance Buffered Loader with Auto-Fallback
+// Uses ImageBitmap for speed, falls back to standard loader for compatibility
 class TextureLoaderSystem {
     private static activeLoads = 0;
-    private static maxConcurrency = 4; // Conservative limit for mobile stability
+    private static maxConcurrency = 4;
     private static queue: (() => void)[] = [];
 
     static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
         return new Promise((resolve, reject) => {
             const loadTask = async () => {
                 try {
-                    let tex: THREE.Texture;
+                    let tex: THREE.Texture | null = null;
+                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
 
-                    // Timeout safety to prevent hanging promises
-                    const timeoutPromise = new Promise((_, r) =>
-                        setTimeout(() => r(new Error('Texture load timed out')), 5000)
+                    // Timeout to prevent hanging
+                    const timeoutPromise = new Promise<never>((_, r) =>
+                        setTimeout(() => r(new Error('Timeout')), 8000)
                     );
 
-                    const loaderPromise = (async () => {
-                        // FAST PATH: Use ImageBitmap (supported on most modern browsers & mobile)
+                    const attemptLoad = async () => {
+                        // 1. Try FAST PATH: ImageBitmap (Chrome/Edge/Android)
                         if (typeof createImageBitmap !== 'undefined') {
-                            const response = await fetch(url);
-                            const blob = await response.blob();
-                            const imageBitmap = await createImageBitmap(blob, {
-                                premultiplyAlpha: 'none',
-                                colorSpaceConversion: 'none'
-                            });
-                            return new THREE.CanvasTexture(imageBitmap);
-                        } else {
-                            // FALLBACK: Standard Loader
-                            const loader = new THREE.TextureLoader();
-                            return await loader.loadAsync(url);
+                            try {
+                                const response = await fetch(url);
+                                const blob = await response.blob();
+                                const imageBitmap = await createImageBitmap(blob, {
+                                    premultiplyAlpha: 'none',
+                                    colorSpaceConversion: 'none'
+                                });
+                                return new THREE.CanvasTexture(imageBitmap);
+                            } catch (bitmapErr) {
+                                console.warn(`[TextureLoader] Bitmap failed for ${id}, falling back...`, bitmapErr);
+                                // Fallthrough to standard loader
+                            }
                         }
-                    })();
 
-                    // Race against timeout
+                        // 2. Fallback: Standard TextureLoader (Safari/iOS Friendly)
+                        console.log(`[TextureLoader] Using standard loader for ${id}`);
+                        const loader = new THREE.TextureLoader();
+                        return await loader.loadAsync(url);
+                    };
+
+                    // Race load against timeout
                     // @ts-ignore
-                    tex = await Promise.race([loaderPromise, timeoutPromise]);
+                    tex = await Promise.race([attemptLoad(), timeoutPromise]);
 
-                    // Optimal Settings for Quality & Performance
-                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                    tex.anisotropy = Math.min(maxAnisotropy, 4); // Keep anisotropic filtering moderate
-                    tex.minFilter = THREE.LinearMipmapLinearFilter;
-                    tex.magFilter = THREE.LinearFilter;
-                    tex.generateMipmaps = true;
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                    tex.needsUpdate = true;
+                    if (tex) {
+                        tex.anisotropy = Math.min(maxAnisotropy, 4);
+                        tex.minFilter = THREE.LinearMipmapLinearFilter;
+                        tex.magFilter = THREE.LinearFilter;
+                        tex.generateMipmaps = true;
+                        tex.colorSpace = THREE.SRGBColorSpace;
+                        tex.needsUpdate = true;
+                        resolve(tex);
+                    } else {
+                        reject(new Error("Failed to create texture"));
+                    }
 
-                    resolve(tex);
                 } catch (err) {
                     console.warn(`[TextureLoader] Failed ${id}:`, err);
                     reject(err);
@@ -99,6 +108,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(() => GlobalTextureCache.get(photo.id) || null);
     const [isLoading, setIsLoading] = useState(!GlobalTextureCache.get(photo.id));
+    const [hasError, setHasError] = useState(false);
     const [hovered, setHovered] = useState(false);
     const { gl, camera } = useThree();
 
@@ -113,6 +123,8 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
         const url = URL.createObjectURL(photo.thumbnail);
 
         setIsLoading(true);
+        setHasError(false);
+
         TextureLoaderSystem.load(photo.id, url, gl)
             .then(tex => {
                 if (isCancelled) {
@@ -129,6 +141,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
                 console.error(`Failed to load texture ${photo.id}:`, err);
                 URL.revokeObjectURL(url);
                 setIsLoading(false);
+                setHasError(true);
             });
 
         return () => {
@@ -184,8 +197,16 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
                 </mesh>
             )}
 
+            {/* ERROR STATE: Red tint if loading fails */}
+            {hasError && (
+                <mesh>
+                    <planeGeometry args={[width, height]} />
+                    <meshBasicMaterial color="#ff0000" opacity={0.5} transparent side={THREE.DoubleSide} />
+                </mesh>
+            )}
+
             {/* Main Photo Mesh - only visible when texture exists */}
-            {texture && (
+            {texture && !hasError && (
                 <mesh
                     ref={meshRef}
                     onClick={(e) => { e.stopPropagation(); onClick(photo); }}
