@@ -22,11 +22,9 @@ class GlobalTextureCache {
 }
 
 // 2. Dual-Mode Loader: Strict Serial for Mobile, Parallel for Desktop
-// 2. Dual-Mode Loader: Strict Serial for Mobile, Parallel for Desktop
 class TextureLoaderSystem {
-    private static queue: (() => Promise<void>)[] = [];
-    private static activeMobileLoads = 0;
-    private static MAX_MOBILE_CONCURRENCY = 3; // Allow 3 concurrent loads on mobile for speed
+    private static serialQueue: (() => Promise<void>)[] = [];
+    private static isProcessing = false;
 
     static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
         const isMobile = window.innerWidth < 768;
@@ -52,10 +50,9 @@ class TextureLoaderSystem {
             });
         }
 
-        // MOBILE PATH: Adaptive Parallel Queue (Safe Mode)
-        // We use a semaphore-like system to limit concurrency but not strictly 1-by-1
+        // MOBILE PATH: Strict Serial Queue (Safe Mode)
         return new Promise((resolve, reject) => {
-            const loadTask = async () => {
+            this.serialQueue.push(async () => {
                 try {
                     let tex: THREE.Texture;
 
@@ -82,33 +79,31 @@ class TextureLoaderSystem {
                 } catch (err) {
                     console.warn(`[SerialLoader] Failed ${id}:`, err);
                     reject(err);
-                } finally {
-                    this.activeMobileLoads--;
-                    this.processQueue(); // Trigger next item
                 }
-            };
+                // Breathable delay (100ms) for mobile thread stability
+                await new Promise(r => setTimeout(r, 100));
+            });
 
-            this.queue.push(loadTask);
             this.processQueue();
         });
     }
 
-    private static processQueue() {
-        if (this.queue.length === 0) return;
+    private static async processQueue() {
+        if (this.isProcessing || this.serialQueue.length === 0) return;
+        this.isProcessing = true;
 
-        // Verify we have slots available
-        if (this.activeMobileLoads >= this.MAX_MOBILE_CONCURRENCY) return;
-
-        // Dequeue and execute
-        const nextTask = this.queue.shift();
-        if (nextTask) {
-            this.activeMobileLoads++;
-
-            // Artificial tiny delay (1 frame) to allow UI/Scroll to breathe, but much faster than 100ms
-            setTimeout(() => {
-                nextTask().catch(console.error);
-            }, 16);
+        while (this.serialQueue.length > 0) {
+            const task = this.serialQueue.shift();
+            if (task) {
+                try {
+                    await task();
+                } catch (e) {
+                    console.error("[SerialLoader] Task error:", e);
+                }
+            }
         }
+
+        this.isProcessing = false;
     }
 }
 
