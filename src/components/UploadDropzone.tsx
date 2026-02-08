@@ -57,7 +57,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                         const convertedBlob = await heic2any({
                             blob: file,
                             toType: 'image/jpeg',
-                            quality: 0.75 // Lower quality slightly to prevent mobile Safari OOM
+                            quality: 0.6 // Aggressive compression for mobile safety
                         });
 
                         const jpegBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
@@ -159,11 +159,15 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
 
         let processedCount = 0;
 
-        // Process files sequentially or in small batches to avoid clogging thread
+        // Process files sequentially with delay to prevent mobile Safari crashes (OOM)
         for (const file of acceptedFiles) {
             await processFile(file);
             processedCount++;
             setProgress(Math.round((processedCount / acceptedFiles.length) * 100));
+
+            // Critical: Force 1s delay between files to allow Garbage Collection
+            // This prevents "A problem repeatedly occurred" on iOS
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         setIsProcessing(false);
