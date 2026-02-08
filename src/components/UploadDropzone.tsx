@@ -40,7 +40,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                 img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const MAX_WIDTH = 1024; // Increased from 300 for better clarity 
+                    const MAX_WIDTH = 512; // Optimized from 1024 for mobile VRAM safety while maintaining high quality
                     const scaleSize = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
                     canvas.height = img.height * scaleSize;
