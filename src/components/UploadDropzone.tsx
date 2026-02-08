@@ -8,7 +8,6 @@ import EXIF from 'exif-js';
 import { savePhoto, Photo } from '@/lib/db';
 import { processFacesInPhoto } from '@/lib/face-processing';
 import { loadFaceDetectionModel } from '@/lib/face-detection';
-import heic2any from 'heic2any';
 
 export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => void }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -51,6 +50,9 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                     if (isHeic) {
                         setStatusMessage(`Converting ${file.name} from HEIC...`);
                         console.log(`[Upload] Converting HEIC file: ${file.name}`);
+
+                        const heic2anyModule = await import('heic2any');
+                        const heic2any = heic2anyModule.default;
 
                         const convertedBlob = await heic2any({
                             blob: file,
