@@ -14,7 +14,7 @@ export interface FaceCluster {
  */
 export function clusterFaces(
     allFaces: Map<string, FaceDetection[]>, // photoId -> faces
-    distanceThreshold: number = 0.55 // Stricter threshold (lower = more strict)
+    distanceThreshold: number = 0.45 // Much stricter threshold to prevent duplicates
 ): FaceCluster[] {
     // Collect all faces with their photo IDs
     const facesWithPhotos: Array<{ face: FaceDetection; photoId: string }> = [];
@@ -114,7 +114,7 @@ export function clusterFaces(
 export function assignFaceToCluster(
     face: FaceDetection,
     clusters: FaceCluster[],
-    distanceThreshold: number = 0.55
+    distanceThreshold: number = 0.45
 ): string | null {
     let bestMatch: { clusterId: string; distance: number } | null = null;
 
