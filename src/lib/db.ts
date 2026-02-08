@@ -47,7 +47,7 @@ interface SpiralDB extends DBSchema {
 }
 
 const DB_NAME = 'spiral-db';
-const DB_VERSION = 3; // Incremented to force schema refresh
+const DB_VERSION = 4; // Incremented to force schema refresh (Fix for stuck processing)
 
 let dbPromise: Promise<IDBPDatabase<SpiralDB>>;
 

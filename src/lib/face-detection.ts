@@ -29,11 +29,18 @@ export async function loadFaceDetectionModel(): Promise<void> {
         // Load models from CDN
         const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
 
-        await Promise.all([
+        // Add timeout to prevent hanging forever
+        const loadPromise = Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
             faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
             faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
         ]);
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Model loading timed out')), 20000)
+        );
+
+        await Promise.race([loadPromise, timeoutPromise]);
 
         modelsLoaded = true;
         console.log('[Face Detection] Models loaded successfully');
