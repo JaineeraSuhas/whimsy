@@ -13,29 +13,32 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(null);
     const [hovered, setHovered] = useState(false);
+    const [loading, setLoading] = useState(true);
     const { gl } = useThree();
 
     useEffect(() => {
+        setLoading(true);
+        // Use thumbnail for faster loading
         const url = URL.createObjectURL(photo.thumbnail);
         const loader = new THREE.TextureLoader();
 
         loader.load(
             url,
             (tex) => {
-                // Mobile-compatible texture settings
-                const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                tex.anisotropy = Math.min(maxAnisotropy, 4); // Limit for mobile performance
-                tex.minFilter = THREE.LinearFilter; // Simpler filter for mobile
+                // Simple settings for mobile
+                tex.minFilter = THREE.LinearFilter;
                 tex.magFilter = THREE.LinearFilter;
                 tex.colorSpace = THREE.SRGBColorSpace;
-                tex.generateMipmaps = false; // Disable mipmaps for better mobile compatibility
                 tex.needsUpdate = true;
                 setTexture(tex);
+                setLoading(false);
                 URL.revokeObjectURL(url);
+                console.log('[Texture] Loaded:', photo.id);
             },
             undefined,
             (error) => {
-                console.error('Error loading texture:', error);
+                console.error('[Texture] Failed:', photo.id, error);
+                setLoading(false);
                 URL.revokeObjectURL(url);
             }
         );
@@ -45,7 +48,7 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 texture.dispose();
             }
         };
-    }, [photo, gl]);
+    }, [photo.thumbnail, gl]);
 
     useFrame((state) => {
         if (meshRef.current) {
