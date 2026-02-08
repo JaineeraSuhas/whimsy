@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from 'react';
@@ -21,33 +20,78 @@ class GlobalTextureCache {
     }
 }
 
-// 2. Native Parallel Loader
-// Relies on browser's internal resource scheduler for maximum throughput
+// 2. High-Performance Buffered Loader (Robust)
+// Uses ImageBitmap for off-thread decoding and limits concurrency to prevent UI stutter
 class TextureLoaderSystem {
+    private static activeLoads = 0;
+    private static maxConcurrency = 4; // Conservative limit for mobile stability
+    private static queue: (() => void)[] = [];
+
     static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
         return new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(
-                url,
-                (tex) => {
-                    // Mobile Optimization: 4x Anisotropy is enough, 16x is overkill/slow
-                    // Desktop can handle more, but 4x is a safe middle ground for 640px
-                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                    tex.anisotropy = Math.min(maxAnisotropy, 4);
+            const loadTask = async () => {
+                try {
+                    let tex: THREE.Texture;
 
+                    // Timeout safety to prevent hanging promises
+                    const timeoutPromise = new Promise((_, r) =>
+                        setTimeout(() => r(new Error('Texture load timed out')), 5000)
+                    );
+
+                    const loaderPromise = (async () => {
+                        // FAST PATH: Use ImageBitmap (supported on most modern browsers & mobile)
+                        if (typeof createImageBitmap !== 'undefined') {
+                            const response = await fetch(url);
+                            const blob = await response.blob();
+                            const imageBitmap = await createImageBitmap(blob, {
+                                premultiplyAlpha: 'none',
+                                colorSpaceConversion: 'none'
+                            });
+                            return new THREE.CanvasTexture(imageBitmap);
+                        } else {
+                            // FALLBACK: Standard Loader
+                            const loader = new THREE.TextureLoader();
+                            return await loader.loadAsync(url);
+                        }
+                    })();
+
+                    // Race against timeout
+                    // @ts-ignore
+                    tex = await Promise.race([loaderPromise, timeoutPromise]);
+
+                    // Optimal Settings for Quality & Performance
+                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                    tex.anisotropy = Math.min(maxAnisotropy, 4); // Keep anisotropic filtering moderate
                     tex.minFilter = THREE.LinearMipmapLinearFilter;
                     tex.magFilter = THREE.LinearFilter;
                     tex.generateMipmaps = true;
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.needsUpdate = true;
+
                     resolve(tex);
-                },
-                undefined,
-                (err) => {
+                } catch (err) {
                     console.warn(`[TextureLoader] Failed ${id}:`, err);
                     reject(err);
+                } finally {
+                    this.activeLoads--;
+                    this.processQueue();
                 }
-            );
+            };
+
+            this.queue.push(loadTask);
+            this.processQueue();
         });
+    }
+
+    private static processQueue() {
+        if (this.queue.length === 0) return;
+        if (this.activeLoads >= this.maxConcurrency) return;
+
+        const task = this.queue.shift();
+        if (task) {
+            this.activeLoads++;
+            task();
+        }
     }
 }
 
