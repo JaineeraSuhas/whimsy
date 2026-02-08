@@ -47,9 +47,12 @@ class TextureLoaderSystem {
                                 const blob = await response.blob();
                                 const imageBitmap = await createImageBitmap(blob, {
                                     premultiplyAlpha: 'none',
-                                    colorSpaceConversion: 'none'
+                                    colorSpaceConversion: 'none',
+                                    imageOrientation: 'flipY' // Fix for inverted textures
                                 });
-                                return new THREE.CanvasTexture(imageBitmap);
+                                const texture = new THREE.CanvasTexture(imageBitmap);
+                                texture.flipY = false; // Already flipped by bitmap
+                                return texture;
                             } catch (bitmapErr) {
                                 console.warn(`[TextureLoader] Bitmap failed for ${id}, falling back...`, bitmapErr);
                                 // Fallthrough to standard loader
