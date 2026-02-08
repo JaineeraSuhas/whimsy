@@ -1,15 +1,19 @@
-import { Users, Grid, Settings, Library } from 'lucide-react';
+import { Users, Grid, Settings, Library, Palette } from 'lucide-react';
 
 interface MobileBottomNavProps {
     filterMode: 'all' | 'people';
+    showDesign: boolean;
     onFilterChange: (mode: 'all' | 'people') => void;
+    onDesignClick: () => void;
     onSettingsClick: () => void;
     onLayoutClick: () => void;
 }
 
 export default function MobileBottomNav({
     filterMode,
+    showDesign,
     onFilterChange,
+    onDesignClick,
     onSettingsClick,
     onLayoutClick
 }: MobileBottomNavProps) {
@@ -19,34 +23,46 @@ export default function MobileBottomNav({
                 {/* Library (All Photos) */}
                 <button
                     onClick={() => onFilterChange('all')}
-                    className={`flex flex-col items-center gap-1.5 px-6 py-2 transition-all duration-300 ${filterMode === 'all'
+                    className={`flex flex-col items-center gap-1.5 px-4 py-2 transition-all duration-300 ${filterMode === 'all' && !showDesign
                         ? 'text-white'
                         : 'text-white/30'
                         }`}
                 >
-                    <Library className={`w-6 h-6 transition-transform ${filterMode === 'all' ? 'scale-110' : 'scale-100'}`} />
-                    <span className="text-[10px] font-bold tracking-tight">Library</span>
+                    <Library className={`w-5 h-5 md:w-6 md:h-6 transition-transform ${filterMode === 'all' && !showDesign ? 'scale-110' : 'scale-100'}`} />
+                    <span className="text-[9px] md:text-[10px] font-bold tracking-tight">Library</span>
                 </button>
 
                 {/* People */}
                 <button
                     onClick={() => onFilterChange('people')}
-                    className={`flex flex-col items-center gap-1.5 px-6 py-2 transition-all duration-300 ${filterMode === 'people'
+                    className={`flex flex-col items-center gap-1.5 px-4 py-2 transition-all duration-300 ${filterMode === 'people' && !showDesign
                         ? 'text-white'
                         : 'text-white/30'
                         }`}
                 >
-                    <Users className={`w-6 h-6 transition-transform ${filterMode === 'people' ? 'scale-110' : 'scale-100'}`} />
-                    <span className="text-[10px] font-bold tracking-tight">People</span>
+                    <Users className={`w-5 h-5 md:w-6 md:h-6 transition-transform ${filterMode === 'people' && !showDesign ? 'scale-110' : 'scale-100'}`} />
+                    <span className="text-[9px] md:text-[10px] font-bold tracking-tight">People</span>
+                </button>
+
+                {/* Design (New) */}
+                <button
+                    onClick={onDesignClick}
+                    className={`flex flex-col items-center gap-1.5 px-4 py-2 transition-all duration-300 ${showDesign
+                        ? 'text-white'
+                        : 'text-white/30'
+                        }`}
+                >
+                    <Palette className={`w-5 h-5 md:w-6 md:h-6 transition-transform ${showDesign ? 'scale-110' : 'scale-100'}`} />
+                    <span className="text-[9px] md:text-[10px] font-bold tracking-tight">Design</span>
                 </button>
 
                 {/* Settings */}
                 <button
                     onClick={onSettingsClick}
-                    className="flex flex-col items-center gap-1.5 px-6 py-2 text-white/30 transition-all active:scale-95 duration-200"
+                    className="flex flex-col items-center gap-1.5 px-4 py-2 text-white/30 transition-all active:scale-95 duration-200"
                 >
-                    <Settings className="w-6 h-6" />
-                    <span className="text-[10px] font-bold tracking-tight">Settings</span>
+                    <Settings className="w-5 h-5 md:w-6 md:h-6" />
+                    <span className="text-[9px] md:text-[10px] font-bold tracking-tight">Settings</span>
                 </button>
             </div>
         </div>

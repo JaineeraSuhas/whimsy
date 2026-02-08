@@ -143,6 +143,7 @@ export default function Home() {
   const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDesignModal, setShowDesignModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<'all' | 'people'>('all');
   const [people, setPeople] = useState<Person[]>([]);
@@ -193,6 +194,7 @@ export default function Home() {
     setFilterMode('all');
     setSelectedPersonIds([]);
     setShowPeopleModal(false);
+    setShowDesignModal(false);
     setShowUpload(false);
     setShowSettings(false);
   };
@@ -274,7 +276,8 @@ export default function Home() {
             exit={{ opacity: 0, scale: 0.9, x: 20 }}
             className="absolute bottom-24 right-8 z-40 pointer-events-auto"
           >
-            <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6">
+            <div className="bg-black backdrop-blur-3xl rounded-[32px] p-6 shadow-2xl relative">
+              {/* No border on desktop radial background as requested */}
               <RadialFaceSelector
                 people={people}
                 selectedPersonIds={selectedPersonIds}
@@ -302,40 +305,69 @@ export default function Home() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black pointer-events-auto md:hidden"
           >
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center">
-              <h2 className="text-xl font-bold tracking-tight">People</h2>
-              <p className="text-xs opacity-50 uppercase tracking-widest mt-1">Select faces to filter photos</p>
+            {/* Minimalist Mobile People Surface - Just the faces */}
+            <div className="flex-1 flex items-center justify-center">
+              <RadialFaceSelector
+                people={people}
+                selectedPersonIds={selectedPersonIds}
+                onSelectPerson={(id) => {
+                  setSelectedPersonIds(prev =>
+                    prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+                  );
+                }}
+                onUpdateName={async (id, name) => {
+                  await updatePersonName(id, name);
+                  await fetchPhotos();
+                }}
+              />
             </div>
 
-            <RadialFaceSelector
-              people={people}
-              selectedPersonIds={selectedPersonIds}
-              onSelectPerson={(id) => {
-                setSelectedPersonIds(prev =>
-                  prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
-                );
-              }}
-              onUpdateName={async (id, name) => {
-                await updatePersonName(id, name);
-                await fetchPhotos();
-              }}
-            />
+            <button
+              onClick={() => setShowPeopleModal(false)}
+              className="mt-12 px-12 py-4 rounded-full bg-white text-black font-extrabold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
+            >
+              DONE
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            {/* Mobile Layout Selector (Rotating options) */}
-            <div className="mt-8 mb-4 flex flex-wrap justify-center gap-2 max-w-[280px]">
-              {['spiral', 'sphere', 'grid', 'helix'].map((m) => (
+      {/* Design Modal - Layout Features for Mobile */}
+      <AnimatePresence>
+        {showDesignModal && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl pointer-events-auto md:hidden"
+          >
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center">
+              <h2 className="text-xl font-bold tracking-tight">Design</h2>
+              <p className="text-xs opacity-50 uppercase tracking-widest mt-1">Select 3D Layout</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 w-full max-w-xs p-6">
+              {['spiral', 'sphere', 'grid', 'wave', 'helix', 'cylinder'].map((m) => (
                 <button
                   key={m}
                   onClick={() => setLayoutMode(m as any)}
-                  className={`px-4 py-2 rounded-full text-[10px] uppercase font-black tracking-widest border transition-all ${layoutMode === m ? 'bg-white text-black border-white' : 'text-white/40 border-white/10'}`}
+                  className={`py-6 rounded-3xl text-[10px] uppercase font-black tracking-widest border transition-all flex flex-col items-center justify-center gap-3 ${layoutMode === m ? 'bg-white text-black border-white shadow-xl scale-105' : 'bg-white/5 text-white/40 border-white/10'}`}
                 >
+                  <span className="text-base">
+                    {m === 'spiral' && '🌀'}
+                    {m === 'sphere' && '🌐'}
+                    {m === 'grid' && '🔲'}
+                    {m === 'wave' && '〰️'}
+                    {m === 'helix' && '🧬'}
+                    {m === 'cylinder' && '🥫'}
+                  </span>
                   {m}
                 </button>
               ))}
             </div>
 
             <button
-              onClick={() => setShowPeopleModal(false)}
+              onClick={() => setShowDesignModal(false)}
               className="mt-12 px-12 py-4 rounded-full bg-white text-black font-extrabold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
             >
               DONE
@@ -407,17 +439,30 @@ export default function Home() {
       {/* Mobile Bottom Navigation - Higher z-index but below Modals */}
       <MobileBottomNav
         filterMode={filterMode}
+        showDesign={showDesignModal}
         onFilterChange={(mode) => {
           if (mode === 'people') {
             setFilterMode('people');
             setShowPeopleModal(true);
+            setShowDesignModal(false);
             setShowUpload(false);
             setShowSettings(false);
           } else {
             handleLibraryClick();
           }
         }}
-        onSettingsClick={() => { setShowSettings(true); setShowUpload(false); setShowPeopleModal(false); }}
+        onDesignClick={() => {
+          setShowDesignModal(!showDesignModal);
+          setShowPeopleModal(false);
+          setShowUpload(false);
+          setShowSettings(false);
+        }}
+        onSettingsClick={() => {
+          setShowSettings(true);
+          setShowUpload(false);
+          setShowPeopleModal(false);
+          setShowDesignModal(false);
+        }}
         onLayoutClick={() => { }}
       />
 
