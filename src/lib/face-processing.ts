@@ -10,6 +10,28 @@ import {
     getDB
 } from './db';
 
+// State tracking for UI
+export type ProcessingState = 'idle' | 'detecting' | 'clustering';
+let currentState: ProcessingState = 'idle';
+const subscribers = new Set<(state: ProcessingState) => void>();
+
+export function getProcessingState() {
+    return currentState;
+}
+
+export function subscribeToProcessingState(callback: (state: ProcessingState) => void) {
+    subscribers.add(callback);
+    callback(currentState); // Initial call
+    return () => subscribers.delete(callback);
+}
+
+function setState(state: ProcessingState) {
+    if (currentState === state) return;
+    currentState = state;
+    console.log(`[Face Processing] State changed to: ${state}`);
+    subscribers.forEach(cb => cb(state));
+}
+
 // Debounce timer for re-clustering
 let reclusterTimeout: NodeJS.Timeout | null = null;
 
@@ -193,7 +215,8 @@ export async function updatePeopleClusters(): Promise<void> {
 export async function getPeopleWithThumbnails(): Promise<Array<{
     id: string;
     name: string;
-    thumbnailUrl: string;
+    thumbnailUrl?: string;
+    thumbnailBlob?: Blob;
     photoCount: number;
 }>> {
     const people = await getAllPeople();
@@ -211,7 +234,8 @@ export async function getPeopleWithThumbnails(): Promise<Array<{
     const result = uniquePeople.map(person => ({
         id: person.id,
         name: person.name,
-        thumbnailUrl: URL.createObjectURL(person.thumbnailBlob),
+        thumbnailBlob: person.thumbnailBlob || undefined, // Pass Blob directly
+        thumbnailUrl: undefined, // No more leaking URLs
         photoCount: person.photoCount,
     }));
 
