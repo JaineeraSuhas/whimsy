@@ -22,14 +22,15 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
         loader.load(
             url,
             (tex) => {
-                // Mobile-compatible texture settings
+                // Restore standard high-quality texture settings for all devices
                 const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                tex.anisotropy = Math.min(maxAnisotropy, 4); // Limit for mobile performance
-                tex.minFilter = THREE.LinearFilter; // Simpler filter for mobile
+                tex.anisotropy = Math.min(maxAnisotropy, 16);
+                tex.minFilter = THREE.LinearMipmapLinearFilter;
                 tex.magFilter = THREE.LinearFilter;
                 tex.colorSpace = THREE.SRGBColorSpace;
-                tex.generateMipmaps = false; // Disable mipmaps for better mobile compatibility
+                tex.generateMipmaps = true;
                 tex.needsUpdate = true;
+
                 setTexture(tex);
                 URL.revokeObjectURL(url);
             },
