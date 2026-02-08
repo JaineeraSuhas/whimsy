@@ -22,8 +22,8 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
     useEffect(() => {
         let isCancelled = false;
 
-        // Small stagger based on index helps mobile browsers prioritize resources
-        const staggerDelay = Math.min(index * 20, 2000);
+        // Increased stagger (40ms) helps mobile Safari prioritize memory allocation
+        const staggerDelay = Math.min(index * 40, 3000);
 
         const timer = setTimeout(() => {
             if (isCancelled) return;
@@ -40,13 +40,22 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
                         return;
                     }
 
-                    // DESKTOP PARITY: High quality settings
+                    const isMobile = window.innerWidth < 768;
                     const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                    tex.anisotropy = Math.min(maxAnisotropy, 16);
-                    tex.minFilter = THREE.LinearMipmapLinearFilter;
+
+                    // VRAM Safety: Mobile uses simpler filters to avoid 33% mipmap overhead
+                    if (isMobile) {
+                        tex.anisotropy = 1;
+                        tex.minFilter = THREE.LinearFilter;
+                        tex.generateMipmaps = false;
+                    } else {
+                        tex.anisotropy = Math.min(maxAnisotropy, 16);
+                        tex.minFilter = THREE.LinearMipmapLinearFilter;
+                        tex.generateMipmaps = true;
+                    }
+
                     tex.magFilter = THREE.LinearFilter;
                     tex.colorSpace = THREE.SRGBColorSpace;
-                    tex.generateMipmaps = true;
                     tex.needsUpdate = true;
 
                     setTexture(tex);
@@ -63,8 +72,10 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
         return () => {
             isCancelled = true;
             clearTimeout(timer);
-            // We consciously do NOT dispose texture here to avoid white-flashes on re-renders,
-            // relying on the parent unmount or browser GC for major cleanup.
+            // Strict disposal: Re-enabled to ensure VRAM is reclaimed immediately on mobile
+            if (texture) {
+                texture.dispose();
+            }
         };
     }, [photo.id, gl]);
 
