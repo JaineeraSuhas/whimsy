@@ -27,34 +27,36 @@ function skinToneSimilarity(t1?: { r: number, g: number, b: number }, t2?: { r: 
  * Calculate similarity metrics between two faces
  */
 function calculateWeightedDistance(face1: FaceDetection, face2: FaceDetection): number {
-    // 1. Embedding distance (65% weight)
+    // 1. Embedding distance (60% weight - slightly reduced to favor unique markers)
     const dist = faceDistance(face1.descriptor, face2.descriptor);
 
-    // 2. Face shape ratio distance (10% weight)
+    // 2. Face shape ratio distance (5% weight)
     const ratio1 = face1.box.height / face1.box.width;
     const ratio2 = face2.box.height / face2.box.width;
     const ratioDist = Math.abs(ratio1 - ratio2);
 
-    // 3. Landmark proportions (15% weight)
+    // 3. Landmark proportions (20% weight - increased)
     let landmarkDist = 0;
     if (face1.landmarks && face2.landmarks) {
         try {
             const getProp = (lm: any) => {
                 const pos = lm.positions;
+                // Use multiple proportions for higher uniqueness
                 const eyeDist = Math.sqrt(Math.pow(pos[36].x - pos[45].x, 2) + Math.pow(pos[36].y - pos[45].y, 2));
                 const eyeToNose = Math.sqrt(Math.pow((pos[36].x + pos[45].x) / 2 - pos[30].x, 2) + Math.pow((pos[36].y + pos[45].y) / 2 - pos[30].y, 2));
-                return eyeToNose / eyeDist;
+                const noseToMouth = Math.sqrt(Math.pow(pos[30].x - pos[62].x, 2) + Math.pow(pos[30].y - pos[62].y, 2));
+                return [eyeToNose / eyeDist, noseToMouth / eyeDist];
             };
             const p1 = getProp(face1.landmarks);
             const p2 = getProp(face2.landmarks);
-            landmarkDist = Math.abs(p1 - p2);
+            landmarkDist = (Math.abs(p1[0] - p2[0]) + Math.abs(p1[1] - p2[1])) / 2;
         } catch (e) { landmarkDist = 0; }
     }
 
-    // 4. Skin tone similarity (10% weight)
+    // 4. Skin tone similarity (15% weight - increased)
     const toneDist = skinToneSimilarity(face1.skinTone, face2.skinTone);
 
-    return (dist * 0.65) + (Math.min(ratioDist, 1) * 0.10) + (Math.min(landmarkDist, 1) * 0.15) + (toneDist * 0.10);
+    return (dist * 0.60) + (Math.min(ratioDist, 1) * 0.05) + (Math.min(landmarkDist, 1) * 0.20) + (toneDist * 0.15);
 }
 
 /**
@@ -62,7 +64,7 @@ function calculateWeightedDistance(face1: FaceDetection, face2: FaceDetection): 
  */
 export function clusterFaces(
     allFaces: Map<string, FaceDetection[]>,
-    distanceThreshold: number = 0.30 // Harder threshold to avoid duplicates
+    distanceThreshold: number = 0.25 // Even stricter threshold for zero duplicates
 ): FaceCluster[] {
     const facesWithPhotos: Array<{ face: FaceDetection; photoId: string }> = [];
     for (const [photoId, faces] of allFaces.entries()) {
@@ -143,7 +145,7 @@ export function clusterFaces(
 export function assignFaceToCluster(
     face: FaceDetection,
     clusters: FaceCluster[],
-    distanceThreshold: number = 0.30
+    distanceThreshold: number = 0.25
 ): string | null {
     let bestMatch: { clusterId: string; distance: number } | null = null;
 

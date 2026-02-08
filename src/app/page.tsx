@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { motion, stagger, useAnimate } from "motion/react";
+import { motion, stagger, useAnimate, AnimatePresence } from "motion/react";
 import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
 import Floating, { FloatingElement } from '@/components/ui/parallax-floating';
 import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName } from '@/lib/db';
-import { Grid, Users, Plus } from 'lucide-react';
+import { Grid, Users, Plus, Library } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails } from '@/lib/face-processing';
@@ -142,10 +142,13 @@ export default function Home() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>([]);
   const [showUpload, setShowUpload] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<'all' | 'people'>('all');
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
+  const [showPeopleModal, setShowPeopleModal] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
 
   const fetchPhotos = async () => {
     setLoading(true);
@@ -186,6 +189,14 @@ export default function Home() {
     fetchPhotos();
   }, []);
 
+  const handleLibraryClick = () => {
+    setFilterMode('all');
+    setSelectedPersonIds([]);
+    setShowPeopleModal(false);
+    setShowUpload(false);
+    setShowSettings(false);
+  };
+
   if (!showApp) {
     return <HeroSection onEnter={() => setShowApp(true)} />;
   }
@@ -193,9 +204,9 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
 
-      {/* 3D Spiral Canvas */}
-      <div className="absolute inset-0 z-10">
-        <SpiralCanvas photos={filteredPhotos} />
+      {/* 3D Spiral Canvas - Lower z-index to stay below UI */}
+      <div className="absolute inset-0 z-0">
+        <SpiralCanvas photos={filteredPhotos} externalLayoutMode={layoutMode} onLayoutChange={setLayoutMode} />
       </div>
 
       {/* UI Overlay - Top Status Bar (iOS/macOS Style) */}
@@ -208,8 +219,8 @@ export default function Home() {
             className="pointer-events-auto"
           >
             <h1
-              onClick={() => setShowApp(false)}
-              className="text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-70 transition-opacity"
+              onClick={handleLibraryClick}
+              className="text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-70 transition-opacity cursor-pointer"
             >
               whimsy.
             </h1>
@@ -228,8 +239,8 @@ export default function Home() {
             className="pointer-events-auto flex items-center gap-2"
           >
             <button
-              onClick={() => setShowUpload(!showUpload)}
-              className="h-10 w-10 md:w-auto md:px-5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all flex items-center justify-center gap-2 backdrop-blur-xl shadow-2xl"
+              onClick={() => { setShowUpload(true); setShowPeopleModal(false); setShowSettings(false); }}
+              className="h-10 w-10 md:w-auto md:px-5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all flex items-center justify-center gap-2 backdrop-blur-xl shadow-2xl z-50"
             >
               <Plus className="w-5 h-5 md:w-4 md:h-4" />
               <span className="hidden md:inline text-sm font-semibold">Add Photos</span>
@@ -238,7 +249,7 @@ export default function Home() {
             {/* Desktop-only secondary filter */}
             <div className="hidden md:flex items-center gap-1 p-1 rounded-full bg-black/40 backdrop-blur-xl border border-white/5">
               <button
-                onClick={() => { setFilterMode('all'); setSelectedPersonIds([]); }}
+                onClick={handleLibraryClick}
                 className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${filterMode === 'all' ? 'bg-white text-black' : 'text-white/40 hover:text-white/60'}`}
               >
                 LIBRARY
@@ -254,21 +265,19 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Radial Face Selector - iOS Bottom Sheet Style for Mobile */}
-      {filterMode === 'people' && people.length > 0 && (
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="fixed inset-x-0 bottom-0 z-50 pointer-events-auto md:absolute md:bottom-24 md:right-8 md:inset-x-auto"
-        >
-          {/* Mobile Backdrop */}
-          <div className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-sm -z-10" onClick={() => setFilterMode('all')} />
-
-          <div className="relative bg-neutral-900/90 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none border-t border-white/10 md:border-none rounded-t-[32px] md:rounded-none p-8 md:p-0 flex flex-col items-center">
-            {/* iOS Handle */}
-            <div className="w-12 h-1.5 bg-white/20 rounded-full mb-8 md:hidden" />
+      {/* People Modal - Dedicated iOS Popup Interface */}
+      <AnimatePresence>
+        {showPeopleModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black pointer-events-auto"
+          >
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center">
+              <h2 className="text-xl font-bold tracking-tight">People</h2>
+              <p className="text-xs opacity-50 uppercase tracking-widest mt-1">Select faces to filter photos</p>
+            </div>
 
             <RadialFaceSelector
               people={people}
@@ -284,57 +293,104 @@ export default function Home() {
               }}
             />
 
+            {/* Mobile Layout Selector (Rotating options) */}
+            <div className="mt-8 mb-4 flex flex-wrap justify-center gap-2 max-w-[280px]">
+              {['spiral', 'sphere', 'grid', 'helix'].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setLayoutMode(m as any)}
+                  className={`px-4 py-2 rounded-full text-[10px] uppercase font-black tracking-widest border transition-all ${layoutMode === m ? 'bg-white text-black border-white' : 'text-white/40 border-white/10'}`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+
             <button
-              onClick={() => setFilterMode('all')}
-              className="mt-8 px-8 py-3 rounded-full bg-white text-black font-bold text-sm md:hidden shadow-xl"
+              onClick={() => setShowPeopleModal(false)}
+              className="mt-12 px-12 py-4 rounded-full bg-white text-black font-extrabold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
             >
               DONE
             </button>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Upload Section - Only show when no photos or upload is active */}
-      {(photos.length === 0 || showUpload) && !loading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="absolute inset-0 flex items-center justify-center bg-black/95 backdrop-blur-md z-20 pointer-events-auto"
-        >
-          <div className="relative w-full">
-            {showUpload && (
-              <motion.button
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                onClick={() => setShowUpload(false)}
-                className="absolute top-8 right-8 text-white/50 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group"
+      {/* Settings Modal Placeholder */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 backdrop-blur-3xl pointer-events-auto p-12 text-center"
+          >
+            <h2 className="text-3xl font-bold mb-8">Settings</h2>
+            <div className="w-full max-w-sm space-y-4">
+              <button
+                onClick={() => { if (confirm("Clear all data?")) { localStorage.clear(); window.location.reload(); } }}
+                className="w-full py-4 rounded-2xl bg-red-500/20 text-red-500 border border-red-500/30 font-bold"
               >
-                <span className="group-hover:translate-x-[-2px] transition-transform">✕</span>
-                <span>Close</span>
-              </motion.button>
-            )}
-            <UploadSection
-              onUploadComplete={() => {
-                fetchPhotos();
-                setShowUpload(false);
-              }}
-            />
-          </div>
-        </motion.div>
-      )}
+                Reset Library
+              </button>
+              <div className="py-4 px-6 rounded-2xl bg-white/5 border border-white/10 text-xs opacity-50">
+                Version 0.2.1 • iOS Edition
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="mt-12 text-white/50 hover:text-white font-medium"
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Upload Section - High z-index with explicit Close btn fix */}
+      <AnimatePresence>
+        {(photos.length === 0 || showUpload) && !loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/98 backdrop-blur-2xl z-[70] pointer-events-auto"
+          >
+            {/* Explicit Close Button on Top Level */}
+            <button
+              onClick={() => setShowUpload(false)}
+              className="fixed top-8 right-8 z-[80] p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all font-bold"
+            >
+              <Plus className="w-6 h-6 rotate-45" />
+            </button>
+
+            <div className="w-full max-w-4xl px-6">
+              <UploadSection
+                onUploadComplete={() => {
+                  fetchPhotos();
+                  setShowUpload(false);
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Bottom Navigation - Higher z-index but below Modals */}
       <MobileBottomNav
         filterMode={filterMode}
         onFilterChange={(mode) => {
-          setFilterMode(mode);
-          if (mode === 'all') setSelectedPersonIds([]);
+          if (mode === 'people') {
+            setFilterMode('people');
+            setShowPeopleModal(true);
+            setShowUpload(false);
+            setShowSettings(false);
+          } else {
+            handleLibraryClick();
+          }
         }}
-        onSettingsClick={() => setShowUpload(true)} // Or dedicated settings modal if needed
-        onLayoutClick={() => { }} // Could trigger layout change
+        onSettingsClick={() => { setShowSettings(true); setShowUpload(false); setShowPeopleModal(false); }}
+        onLayoutClick={() => { }}
       />
 
     </main>

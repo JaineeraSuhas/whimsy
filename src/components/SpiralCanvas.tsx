@@ -217,8 +217,17 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spi
 //         setTexture(tex);
 //         ...
 
-export default function SpiralCanvas({ photos }: { photos: Photo[] }) {
-    const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
+interface SpiralCanvasProps {
+    photos: Photo[];
+    externalLayoutMode?: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder';
+    onLayoutChange?: (mode: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder') => void;
+}
+
+export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChange }: SpiralCanvasProps) {
+    const [internalLayoutMode, setInternalLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
+    const layoutMode = externalLayoutMode || internalLayoutMode;
+    const setLayoutMode = onLayoutChange || setInternalLayoutMode;
+
     const [showSettings, setShowSettings] = useState(false);
 
     const handleClearStorage = async () => {
