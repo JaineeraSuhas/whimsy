@@ -9,41 +9,33 @@ import { getAllPhotos, Photo } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, LayoutGrid, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
-// Staggered loading helper to avoid overwhelming mobile Safari
-const loadQueue: string[] = [];
-let isProcessingQueue = false;
+// 1. Precise Global Cache to persist textures across re-renders
+class GlobalTextureCache {
+    private static cache = new Map<string, THREE.Texture>();
 
-function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number }) {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const [texture, setTexture] = useState<THREE.Texture | null>(null);
-    const [hovered, setHovered] = useState(false);
-    const { gl } = useThree();
+    static get(id: string) { return this.cache.get(id); }
+    static set(id: string, tex: THREE.Texture) { this.cache.set(id, tex); }
+    static clear() {
+        this.cache.forEach(tex => tex.dispose());
+        this.cache.clear();
+    }
+}
 
-    useEffect(() => {
-        let isCancelled = false;
+// 2. Strict Serial Loader Queue to protect mobile Safari's resource limits
+class SerialTextureLoader {
+    private static queue: (() => Promise<void>)[] = [];
+    private static isProcessing = false;
 
-        // Increased stagger (40ms) helps mobile Safari prioritize memory allocation
-        const staggerDelay = Math.min(index * 40, 3000);
-
-        const timer = setTimeout(() => {
-            if (isCancelled) return;
-
-            const url = URL.createObjectURL(photo.thumbnail);
-            const loader = new THREE.TextureLoader();
-
-            loader.load(
-                url,
-                (tex) => {
-                    if (isCancelled) {
-                        tex.dispose();
-                        URL.revokeObjectURL(url);
-                        return;
-                    }
+    static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
+        return new Promise((resolve, reject) => {
+            this.queue.push(async () => {
+                try {
+                    const loader = new THREE.TextureLoader();
+                    const tex = await loader.loadAsync(url);
 
                     const isMobile = window.innerWidth < 768;
                     const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
 
-                    // VRAM Safety: Mobile uses simpler filters to avoid 33% mipmap overhead
                     if (isMobile) {
                         tex.anisotropy = 1;
                         tex.minFilter = THREE.LinearFilter;
@@ -58,26 +50,65 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.needsUpdate = true;
 
-                    setTexture(tex);
-                    URL.revokeObjectURL(url);
-                },
-                undefined,
-                (err) => {
-                    console.error(`Error loading texture ${photo.id}:`, err);
-                    URL.revokeObjectURL(url);
+                    resolve(tex);
+                } catch (err) {
+                    reject(err);
                 }
-            );
-        }, staggerDelay);
+                // Breathable delay between loads (60ms) to let GPU/Decoder settle
+                await new Promise(r => setTimeout(r, 60));
+            });
+
+            this.process();
+        });
+    }
+
+    private static async process() {
+        if (this.isProcessing || this.queue.length === 0) return;
+        this.isProcessing = true;
+
+        while (this.queue.length > 0) {
+            const task = this.queue.shift();
+            if (task) await task();
+        }
+
+        this.isProcessing = false;
+    }
+}
+
+function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const [texture, setTexture] = useState<THREE.Texture | null>(() => GlobalTextureCache.get(photo.id) || null);
+    const [hovered, setHovered] = useState(false);
+    const { gl } = useThree();
+
+    useEffect(() => {
+        // If already in cache, do nothing
+        if (texture) return;
+
+        let isCancelled = false;
+        const url = URL.createObjectURL(photo.thumbnail);
+
+        SerialTextureLoader.load(photo.id, url, gl)
+            .then(tex => {
+                if (isCancelled) {
+                    tex.dispose();
+                    URL.revokeObjectURL(url);
+                    return;
+                }
+                GlobalTextureCache.set(photo.id, tex);
+                setTexture(tex);
+                URL.revokeObjectURL(url);
+            })
+            .catch(err => {
+                console.error(`Failed to load texture ${photo.id}:`, err);
+                URL.revokeObjectURL(url);
+            });
 
         return () => {
             isCancelled = true;
-            clearTimeout(timer);
-            // Strict disposal: Re-enabled to ensure VRAM is reclaimed immediately on mobile
-            if (texture) {
-                texture.dispose();
-            }
+            // No disposal here; persistent cache handles it
         };
-    }, [photo.id, gl]);
+    }, [photo.id, gl, texture]);
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -263,6 +294,18 @@ export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChang
 
     const [showSettings, setShowSettings] = useState(false);
 
+    const handleClear = () => {
+        GlobalTextureCache.clear();
+        if (onClearPhotos) onClearPhotos();
+    };
+
+    // Auto-clear cache if photos are externally cleared
+    useEffect(() => {
+        if (photos.length === 0) {
+            GlobalTextureCache.clear();
+        }
+    }, [photos.length]);
+
     const layoutOptions = [
         { id: 'layout-spiral', value: 'spiral', label: 'Spiral' },
         { id: 'layout-sphere', value: 'sphere', label: 'Sphere' },
@@ -348,7 +391,7 @@ export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChang
                     <div className="p-4 rounded-2xl glass bg-black/80 backdrop-blur-md border border-white/10 pointer-events-auto w-56">
                         <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium">Actions</p>
                         <button
-                            onClick={onClearPhotos}
+                            onClick={handleClear}
                             className="w-full px-4 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-500/30"
                         >
                             Clear All Photos
