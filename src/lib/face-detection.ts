@@ -12,6 +12,7 @@ export interface FaceDetection {
     };
     descriptor: Float32Array; // face-api.js descriptor (128 dimensions)
     landmarks?: any;
+    score?: number; // Detection confidence score
 }
 
 /**
@@ -89,6 +90,7 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                 },
                 descriptor: detection.descriptor as Float32Array,
                 landmarks: detection.landmarks,
+                score: detection.detection.score,
             };
         });
 
