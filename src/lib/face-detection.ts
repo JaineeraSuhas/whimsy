@@ -13,6 +13,7 @@ export interface FaceDetection {
     descriptor: Float32Array; // face-api.js descriptor (128 dimensions)
     landmarks?: any;
     score?: number; // Detection confidence score
+    quality?: number; // Overall face quality score (0-1)
     skinTone?: { r: number; g: number; b: number }; // Average color of central face region
 }
 
@@ -78,39 +79,110 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
         console.log(`[Face Detection] Found ${detections.length} faces`);
 
         // Convert to our format
-        const faces: FaceDetection[] = detections.map((detection, index) => {
+        const faces: FaceDetection[] = detections.map((detection) => {
             const box = detection.detection.box;
+            const landmarks = detection.landmarks;
 
-            // Sample skin tone from the center of the face
+            // Sample skin tone and compute quality metrics
             let skinTone = { r: 0, g: 0, b: 0 };
+            let quality = 0;
+
             try {
                 const sampleCanvas = document.createElement('canvas');
-                sampleCanvas.width = 10;
-                sampleCanvas.height = 10;
+                sampleCanvas.width = 128; // Standard size for analysis
+                sampleCanvas.height = 128;
                 const sampleCtx = sampleCanvas.getContext('2d');
+
                 if (sampleCtx) {
-                    // Draw a small central portion of the face
-                    const cx = box.x + box.width * 0.4;
-                    const cy = box.y + box.height * 0.4;
-                    const cw = box.width * 0.2;
-                    const ch = box.height * 0.2;
-                    sampleCtx.drawImage(img, cx, cy, cw, ch, 0, 0, 10, 10);
-                    const data = sampleCtx.getImageData(0, 0, 10, 10).data;
-                    let r = 0, g = 0, b = 0;
-                    for (let i = 0; i < data.length; i += 4) {
-                        r += data[i];
-                        g += data[i + 1];
-                        b += data[i + 2];
+                    // Draw face for analysis
+                    sampleCtx.drawImage(
+                        img,
+                        box.x, box.y, box.width, box.height,
+                        0, 0, 128, 128
+                    );
+                    const imageData = sampleCtx.getImageData(0, 0, 128, 128);
+                    const data = imageData.data;
+
+                    // 1. Calculate Skin Tone (Center Region)
+                    let r = 0, g = 0, b = 0, count = 0;
+                    const centerStart = 128 * 40 * 4; // Approx start of center 40%
+                    const centerEnd = 128 * 88 * 4;
+
+                    for (let i = centerStart; i < centerEnd; i += 4) {
+                        // Simple center crop check (x bounds)
+                        const x = (i / 4) % 128;
+                        if (x > 40 && x < 88) {
+                            r += data[i];
+                            g += data[i + 1];
+                            b += data[i + 2];
+                            count++;
+                        }
                     }
-                    const count = data.length / 4;
                     skinTone = { r: r / count, g: g / count, b: b / count };
+
+                    // 2. Calculate Brightness Score
+                    const brightness = (0.299 * skinTone.r + 0.587 * skinTone.g + 0.114 * skinTone.b);
+                    let brightnessScore = 0;
+                    if (brightness >= 80 && brightness <= 180) {
+                        brightnessScore = 1.0;
+                    } else {
+                        brightnessScore = 1.0 - Math.abs(brightness - 130) / 130.0;
+                    }
+
+                    // 3. Calculate Sharpness Score (Laplacian variance approx)
+                    // We'll use a simple edge detection check as proxy
+                    let edgeSum = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        // Compare with right neighbor (horizontal gradient)
+                        if ((i / 4) % 128 < 127) {
+                            const diff = Math.abs(data[i] - data[i + 4]);
+                            edgeSum += diff;
+                        }
+                    }
+                    const avgEdge = edgeSum / (128 * 128);
+                    const sharpnessScore = Math.min(avgEdge / 20.0, 1.0); // Normalize
+
+                    // 4. Calculate Frontality & Symmetry (using landmarks)
+                    let frontalityScore = 0.7;
+                    let symmetryScore = 0.8;
+
+                    if (landmarks) {
+                        const positions = landmarks.positions;
+                        const leftEye = positions[36];
+                        const rightEye = positions[45];
+                        const nose = positions[30];
+                        const leftMouth = positions[48];
+                        const rightMouth = positions[54];
+
+                        // Frontality: Nose should be centered between eyes
+                        const eyeDist = Math.sqrt(Math.pow(leftEye.x - rightEye.x, 2) + Math.pow(leftEye.y - rightEye.y, 2));
+                        const midEyeX = (leftEye.x + rightEye.x) / 2;
+                        const noseOffset = Math.abs(nose.x - midEyeX);
+                        frontalityScore = 1.0 - Math.min(noseOffset / (eyeDist * 0.5), 1.0);
+
+                        // Symmetry: Eye-Nose distances
+                        const leftDist = Math.sqrt(Math.pow(leftEye.x - nose.x, 2) + Math.pow(leftEye.y - nose.y, 2));
+                        const rightDist = Math.sqrt(Math.pow(rightEye.x - nose.x, 2) + Math.pow(rightEye.y - nose.y, 2));
+                        symmetryScore = 1.0 - (Math.abs(leftDist - rightDist) / Math.max(leftDist, rightDist));
+                    }
+
+                    // Total Quality Score (Weighted)
+                    // Weights: Sharpness 30%, Brightness 20%, Frontality 25%, Resolution 15%, Symmetry 10%
+                    // Resolution score is 1.0 since we scaled to standard, but original box matters
+                    const resolutionScore = Math.min(box.width / 200, 1.0);
+
+                    quality = (sharpnessScore * 0.30) +
+                        (brightnessScore * 0.20) +
+                        (frontalityScore * 0.25) +
+                        (resolutionScore * 0.15) +
+                        (symmetryScore * 0.10);
                 }
             } catch (e) {
-                console.error('Failed to sample skin tone', e);
+                console.error('Failed to compute quality metrics', e);
             }
 
             return {
-                id: `face-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+                id: `face-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 box: {
                     x: box.x,
                     y: box.y,
@@ -119,7 +191,8 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                 },
                 descriptor: detection.descriptor as Float32Array,
                 landmarks: detection.landmarks,
-                score: detection.detection.score,
+                score: detection.detection.score, // Base detection confidence
+                quality: quality || detection.detection.score, // Use computed quality or fallback
                 skinTone,
             };
         });
