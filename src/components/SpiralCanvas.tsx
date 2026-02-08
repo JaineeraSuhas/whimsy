@@ -21,89 +21,27 @@ class GlobalTextureCache {
     }
 }
 
-// 2. Dual-Mode Loader: Strict Serial for Mobile, Parallel for Desktop
+// 2. Unified Loader: Parallel for Everyone (Mobile + Desktop)
 class TextureLoaderSystem {
-    private static serialQueue: (() => Promise<void>)[] = [];
-    private static isProcessing = false;
-
+    // No more serial queue needed - we want instant visibility like desktop
     static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
-        const isMobile = window.innerWidth < 768;
-
-        // DESKTOP PATH: Instant Parallel Loading (High Quality)
-        if (!isMobile) {
-            return new Promise((resolve, reject) => {
-                new THREE.TextureLoader().load(
-                    url,
-                    (tex) => {
-                        const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                        tex.anisotropy = Math.min(maxAnisotropy, 16);
-                        tex.minFilter = THREE.LinearMipmapLinearFilter;
-                        tex.magFilter = THREE.LinearFilter;
-                        tex.generateMipmaps = true;
-                        tex.colorSpace = THREE.SRGBColorSpace;
-                        tex.needsUpdate = true;
-                        resolve(tex);
-                    },
-                    undefined,
-                    reject
-                );
-            });
-        }
-
-        // MOBILE PATH: Strict Serial Queue (Safe Mode)
         return new Promise((resolve, reject) => {
-            this.serialQueue.push(async () => {
-                try {
-                    let tex: THREE.Texture;
-
-                    // Safari Optimization: Use ImageBitmap if available and on mobile
-                    if (typeof createImageBitmap !== 'undefined') {
-                        const response = await fetch(url);
-                        const blob = await response.blob();
-                        const imageBitmap = await createImageBitmap(blob);
-                        tex = new THREE.CanvasTexture(imageBitmap);
-                    } else {
-                        const loader = new THREE.TextureLoader();
-                        tex = await loader.loadAsync(url);
-                    }
-
-                    // Low memory settings
-                    tex.anisotropy = 1;
-                    tex.minFilter = THREE.LinearFilter;
+            new THREE.TextureLoader().load(
+                url,
+                (tex) => {
+                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                    tex.anisotropy = Math.min(maxAnisotropy, 16);
+                    tex.minFilter = THREE.LinearMipmapLinearFilter;
                     tex.magFilter = THREE.LinearFilter;
-                    tex.generateMipmaps = false;
+                    tex.generateMipmaps = true;
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.needsUpdate = true;
-
                     resolve(tex);
-                } catch (err) {
-                    console.warn(`[SerialLoader] Failed ${id}:`, err);
-                    reject(err);
-                }
-                // Breathable delay (100ms) for mobile thread stability
-                await new Promise(r => setTimeout(r, 100));
-            });
-
-            this.processQueue();
+                },
+                undefined,
+                reject
+            );
         });
-    }
-
-    private static async processQueue() {
-        if (this.isProcessing || this.serialQueue.length === 0) return;
-        this.isProcessing = true;
-
-        while (this.serialQueue.length > 0) {
-            const task = this.serialQueue.shift();
-            if (task) {
-                try {
-                    await task();
-                } catch (e) {
-                    console.error("[SerialLoader] Task error:", e);
-                }
-            }
-        }
-
-        this.isProcessing = false;
     }
 }
 

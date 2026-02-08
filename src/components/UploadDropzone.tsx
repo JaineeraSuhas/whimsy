@@ -86,8 +86,9 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     // Dual-Mode: 640px for Desktop High-End, 160px for Mobile Safety
-                    const isMobile = window.innerWidth < 768;
-                    const MAX_WIDTH = isMobile ? 160 : 640;
+                    // Unified Resolution: 640px for EVERYONE (Mobile + Desktop)
+                    // This ensures face detection works (needs >320px) and photos are visible/crisp
+                    const MAX_WIDTH = 640;
                     const scaleSize = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
                     canvas.height = img.height * scaleSize;
