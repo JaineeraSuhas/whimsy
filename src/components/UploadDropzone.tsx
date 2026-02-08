@@ -40,7 +40,17 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                 const img = new Image();
                 const objectUrl = URL.createObjectURL(file);
 
+                // Safeguard: Timeout if image takes too long to load (e.g., corrupted)
+                const loadTimeout = setTimeout(() => {
+                    console.warn(`[Upload] Image load timed out: ${file.name}`);
+                    setStatusMessage(`Timeout loading ${file.name} - skipping`);
+                    img.src = ""; // Cancel load
+                    URL.revokeObjectURL(objectUrl);
+                    resolve();
+                }, 10000);
+
                 img.onload = async () => {
+                    clearTimeout(loadTimeout);
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     // Dual-Mode: 640px for Desktop High-End, 160px for Mobile Safety
@@ -54,6 +64,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
 
                     canvas.toBlob(async (thumbnailBlob) => {
                         if (!thumbnailBlob) {
+                            console.warn(`[Upload] Failed to create thumbnail blob for ${file.name}`);
                             URL.revokeObjectURL(objectUrl);
                             resolve();
                             return;
@@ -80,11 +91,11 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                             await savePhoto(newPhoto);
 
                             // Then detect faces in background
-                            setStatusMessage('Detecting faces...');
+                            setStatusMessage(`Detecting faces in ${file.name}...`);
                             await processFacesInPhoto(newPhoto);
                         } catch (e) {
                             console.warn("Processing failed for", file.name, e);
-                            setStatusMessage('Skipping faulty image...');
+                            setStatusMessage(`Skipping faulty image: ${file.name}`);
                         } finally {
                             URL.revokeObjectURL(objectUrl);
                             resolve();
@@ -94,7 +105,9 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                 };
 
                 img.onerror = () => {
-                    console.error("Failed to load image for thumbnail");
+                    clearTimeout(loadTimeout);
+                    console.error(`[Upload] Failed to load image: ${file.name} (${file.type}, ${file.size} bytes). Browser may not support this format.`);
+                    setStatusMessage(`Error: Browser cannot read ${file.name}`);
                     URL.revokeObjectURL(objectUrl);
                     resolve();
                 };
