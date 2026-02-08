@@ -72,7 +72,7 @@ function calculateWeightedDistance(face1: FaceDetection, face2: FaceDetection): 
  */
 export function clusterFaces(
     allFaces: Map<string, FaceDetection[]>,
-    distanceThreshold: number = 0.65 // Tuned for generic face-api.js Euclidean (equivalent to ~0.28 Cosine)
+    distanceThreshold: number = 0.75 // Relaxed from 0.65 to capture more faces (iOS "Balanced" equivalent)
 ): FaceCluster[] {
     // 1. Initialize Nodes
     const nodes: ClusterNode[] = [];
@@ -297,7 +297,7 @@ function splitByCooccurrence(faces: Array<{ face: FaceDetection; photoId: string
 export function assignFaceToCluster(
     face: FaceDetection,
     clusters: FaceCluster[],
-    distanceThreshold: number = 0.65
+    distanceThreshold: number = 0.75
 ): string | null {
     let bestMatch: { clusterId: string; distance: number } | null = null;
 
