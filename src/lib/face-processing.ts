@@ -52,7 +52,21 @@ export async function processFacesInPhoto(photo: Photo): Promise<Photo> {
  * Re-cluster all faces and update people
  * ENSURES EXACTLY ONE PERSON PER UNIQUE FACE
  */
+// Concurrency Lock
+let isClustering = false;
+
+/**
+ * Re-cluster all faces and update people
+ * ENSURES EXACTLY ONE PERSON PER UNIQUE FACE
+ */
 export async function updatePeopleClusters(): Promise<void> {
+    if (isClustering) {
+        console.warn('[Face Processing] ⏳ Re-clustering already in progress, skipping...');
+        return;
+    }
+
+    isClustering = true;
+
     try {
         console.log('[Face Processing] 🔄 Starting re-clustering...');
 
@@ -71,35 +85,58 @@ export async function updatePeopleClusters(): Promise<void> {
 
         if (facesMap.size === 0) {
             console.log('[Face Processing] No faces found in any photos');
-
-            // Clear people if no faces
             const db = await getDB();
             const tx = db.transaction('people', 'readwrite');
             await tx.store.clear();
             await tx.done;
-            console.log('[Face Processing] ✅ Cleared people (no faces found)');
+            isClustering = false;
             return;
         }
 
         console.log(`[Face Processing] Found ${totalFaces} faces in ${facesMap.size} photos`);
 
-        // Cluster faces - this should give us ONE cluster per unique person
+        // 1. PRESERVE NAMES: Map every Face ID to its existing Person Name
+        const existingPeople = await getAllPeople();
+        const faceToNameMap = new Map<string, string>();
+        for (const p of existingPeople) {
+            if (p.name.startsWith('Person ')) continue; // Don't preserve auto-generated names
+            for (const fid of p.faceIds) {
+                faceToNameMap.set(fid, p.name);
+            }
+        }
+
+        // 2. CLUSTER FACES (New Strict Logic)
         const clusters = clusterFaces(facesMap);
         console.log(`[Face Processing] ✅ Created ${clusters.length} UNIQUE person clusters`);
 
-        // PREPARE DATA FIRST to avoid transaction auto-close issues
-        // We cannot await async tasks (like thumbnail generation) inside an IDB transaction
+        // 3. PREPARE NEW PEOPLE DATA
         const peopleToSave: DetectedPerson[] = [];
 
         for (let i = 0; i < clusters.length; i++) {
             const cluster = clusters[i];
 
-            // Find the representative face for this cluster
+            // Resolve Name: Vote based on preserved names of faces in this cluster
+            const nameCounts = new Map<string, number>();
+            for (const fid of cluster.faceIds) {
+                const name = faceToNameMap.get(fid);
+                if (name) nameCounts.set(name, (nameCounts.get(name) || 0) + 1);
+            }
+
+            // Find most frequent name
+            let bestName = `Person ${i + 1}`;
+            let maxCount = 0;
+            for (const [name, count] of nameCounts.entries()) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    bestName = name;
+                }
+            }
+
+            // Find representative face thumbnail
             let thumbnailBlob: Blob | null = null;
             let faceBox: any = null;
             let sourcePhoto: Photo | null = null;
 
-            // Use the representative face ID
             for (const photo of allPhotos) {
                 if (!photo.faces) continue;
                 const face = photo.faces.find(f => f.id === cluster.representativeFaceId);
@@ -112,51 +149,41 @@ export async function updatePeopleClusters(): Promise<void> {
 
             if (sourcePhoto && faceBox) {
                 try {
-                    // This is the async operation that was breaking the transaction
                     thumbnailBlob = await extractFaceThumbnail(sourcePhoto.blob, faceBox);
                 } catch (err) {
                     console.error(`[Face Processing] ❌ Failed to extract thumbnail:`, err);
                 }
             }
 
-            if (!thumbnailBlob) {
-                console.warn(`[Face Processing] ⚠️ No thumbnail for Person ${i + 1}, skipping`);
-                continue;
-            }
+            if (!thumbnailBlob) continue;
 
-            const person: DetectedPerson = {
+            peopleToSave.push({
                 id: cluster.id,
-                name: `Person ${i + 1}`,
+                name: bestName,
                 faceIds: cluster.faceIds,
                 anchors: cluster.anchors,
                 skinTone: cluster.skinTone,
                 thumbnailBlob,
                 photoCount: cluster.photoCount,
                 createdAt: Date.now(),
-            };
-
-            peopleToSave.push(person);
+            });
         }
 
-        // NOW perform the atomic database update
+        // 4. ATOMIC DB UPDATE
         const db = await getDB();
         const tx = db.transaction('people', 'readwrite');
-
-        // Queue clear - DO NOT AWAIT
-        tx.store.clear();
-        console.log(`[Face Processing] ⚡ Queued clear of existing people`);
-
-        // Queue saves - DO NOT AWAIT
+        await tx.store.clear();
         for (const person of peopleToSave) {
-            tx.store.put(person);
-            console.log(`[Face Processing] ⚡ Queued save for ${person.name} (${person.id})`);
+            await tx.store.put(person);
         }
-
-        // Wait for transaction to complete
         await tx.done;
-        console.log(`[Face Processing] 🎉 COMPLETE: ${peopleToSave.length} unique people saved to database`);
+
+        console.log(`[Face Processing] 🎉 COMPLETE: ${peopleToSave.length} unique people saved`);
+
     } catch (error) {
         console.error('[Face Processing] ❌ Error updating people clusters:', error);
+    } finally {
+        isClustering = false;
     }
 }
 
