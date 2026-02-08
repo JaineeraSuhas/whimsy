@@ -13,32 +13,29 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(null);
     const [hovered, setHovered] = useState(false);
-    const [loading, setLoading] = useState(true);
     const { gl } = useThree();
 
     useEffect(() => {
-        setLoading(true);
-        // Use thumbnail for faster loading
         const url = URL.createObjectURL(photo.thumbnail);
         const loader = new THREE.TextureLoader();
 
         loader.load(
             url,
             (tex) => {
-                // Simple settings for mobile
-                tex.minFilter = THREE.LinearFilter;
+                // Mobile-compatible texture settings
+                const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                tex.anisotropy = Math.min(maxAnisotropy, 4); // Limit for mobile performance
+                tex.minFilter = THREE.LinearFilter; // Simpler filter for mobile
                 tex.magFilter = THREE.LinearFilter;
                 tex.colorSpace = THREE.SRGBColorSpace;
+                tex.generateMipmaps = false; // Disable mipmaps for better mobile compatibility
                 tex.needsUpdate = true;
                 setTexture(tex);
-                setLoading(false);
                 URL.revokeObjectURL(url);
-                console.log('[Texture] Loaded:', photo.id);
             },
             undefined,
             (error) => {
-                console.error('[Texture] Failed:', photo.id, error);
-                setLoading(false);
+                console.error('Error loading texture:', error);
                 URL.revokeObjectURL(url);
             }
         );
@@ -48,7 +45,7 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 texture.dispose();
             }
         };
-    }, [photo.thumbnail, gl]);
+    }, [photo, gl]);
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -74,10 +71,19 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 <planeGeometry args={[width, height]} />
                 <meshBasicMaterial
                     map={texture || undefined}
-                    color={texture ? "#ffffff" : "#1a1a1a"}
                     side={THREE.DoubleSide}
+                    transparent
+                    opacity={hovered ? 1 : 0.9}
                 />
             </mesh>
+
+            {/* Border / Frame */}
+            <mesh position={[0, 0, -0.01]}>
+                <planeGeometry args={[width + 0.05, height + 0.05]} />
+                <meshBasicMaterial color={hovered ? "#FF4D00" : "#FFFFFF"} opacity={0.3} transparent />
+            </mesh>
+
+
         </group>
     );
 }
