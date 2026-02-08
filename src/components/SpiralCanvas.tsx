@@ -161,7 +161,15 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
                 meshRef.current.lookAt(camera.position);
             } else {
                 // Standard subtle float for other modes
-                meshRef.current.position.y += Math.sin(state.clock.elapsedTime + position[0]) * 0.001;
+                // Reset rotation caused by 'particles' lookAt to ensure flat alignment with group
+                meshRef.current.rotation.set(0, 0, 0);
+
+                // Add standard subtle float
+                // We use a local y offset reset to prevent accumulation if we were strictly adding
+                // But since position prop changes on layout switch, the group moves. 
+                // The mesh position is local.
+                // Let's us a simple sine wave for local float instead of specific accumulation to avoid drift
+                meshRef.current.position.y = Math.sin(state.clock.elapsedTime + position[0]) * 0.1; // Reduced float amplitude
             }
         }
     });
