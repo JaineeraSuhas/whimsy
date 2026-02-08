@@ -9,6 +9,9 @@ import { getAllPhotos, Photo, clearAllPhotos } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, LayoutGrid, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
+// Simple global texture cache to prevent redundant loading and VRAM pressure
+const textureCache = new Map<string, THREE.Texture>();
+
 function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(null);
@@ -16,13 +19,18 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
     const { gl } = useThree();
 
     useEffect(() => {
+        // Check cache first
+        if (textureCache.has(photo.id)) {
+            setTexture(textureCache.get(photo.id)!);
+            return;
+        }
+
         const url = URL.createObjectURL(photo.thumbnail);
         const loader = new THREE.TextureLoader();
 
         loader.load(
             url,
             (tex) => {
-                // Restore standard high-quality texture settings for all devices
                 const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
                 tex.anisotropy = Math.min(maxAnisotropy, 16);
                 tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -31,6 +39,7 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 tex.generateMipmaps = true;
                 tex.needsUpdate = true;
 
+                textureCache.set(photo.id, tex);
                 setTexture(tex);
                 URL.revokeObjectURL(url);
             },
@@ -40,13 +49,8 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 URL.revokeObjectURL(url);
             }
         );
-
-        return () => {
-            if (texture) {
-                texture.dispose();
-            }
-        };
-    }, [photo, gl]);
+        // We persist textures in the cache to avoid re-loading/white blocks on mobile
+    }, [photo.id, photo.thumbnail, gl]);
 
     useFrame((state) => {
         if (meshRef.current) {
