@@ -21,7 +21,7 @@ class GlobalTextureCache {
     }
 }
 
-// 2. Strict Serial Loader Queue to protect mobile Safari's resource limits
+// 2. Strict Serial Loader Queue with ImageBitmap support for mobile stability
 class SerialTextureLoader {
     private static queue: (() => Promise<void>)[] = [];
     private static isProcessing = false;
@@ -30,10 +30,20 @@ class SerialTextureLoader {
         return new Promise((resolve, reject) => {
             this.queue.push(async () => {
                 try {
-                    const loader = new THREE.TextureLoader();
-                    const tex = await loader.loadAsync(url);
-
                     const isMobile = window.innerWidth < 768;
+                    let tex: THREE.Texture;
+
+                    // Safari Optimization: Use ImageBitmap if available and on mobile
+                    if (isMobile && typeof createImageBitmap !== 'undefined') {
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        const imageBitmap = await createImageBitmap(blob);
+                        tex = new THREE.CanvasTexture(imageBitmap);
+                    } else {
+                        const loader = new THREE.TextureLoader();
+                        tex = await loader.loadAsync(url);
+                    }
+
                     const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
 
                     if (isMobile) {
@@ -52,10 +62,11 @@ class SerialTextureLoader {
 
                     resolve(tex);
                 } catch (err) {
+                    console.warn(`[SerialLoader] Failed ${id}:`, err);
                     reject(err);
                 }
-                // Breathable delay between loads (60ms) to let GPU/Decoder settle
-                await new Promise(r => setTimeout(r, 60));
+                // Extended delay (100ms) for mobile thread stability
+                await new Promise(r => setTimeout(r, 100));
             });
 
             this.process();
@@ -68,7 +79,13 @@ class SerialTextureLoader {
 
         while (this.queue.length > 0) {
             const task = this.queue.shift();
-            if (task) await task();
+            if (task) {
+                try {
+                    await task();
+                } catch (e) {
+                    console.error("[SerialLoader] Task error:", e);
+                }
+            }
         }
 
         this.isProcessing = false;
@@ -78,16 +95,17 @@ class SerialTextureLoader {
 function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(() => GlobalTextureCache.get(photo.id) || null);
+    const [isLoading, setIsLoading] = useState(!GlobalTextureCache.get(photo.id));
     const [hovered, setHovered] = useState(false);
     const { gl } = useThree();
 
     useEffect(() => {
-        // If already in cache, do nothing
         if (texture) return;
 
         let isCancelled = false;
         const url = URL.createObjectURL(photo.thumbnail);
 
+        setIsLoading(true);
         SerialTextureLoader.load(photo.id, url, gl)
             .then(tex => {
                 if (isCancelled) {
@@ -97,18 +115,20 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
                 }
                 GlobalTextureCache.set(photo.id, tex);
                 setTexture(tex);
+                setIsLoading(false);
                 URL.revokeObjectURL(url);
             })
             .catch(err => {
                 console.error(`Failed to load texture ${photo.id}:`, err);
                 URL.revokeObjectURL(url);
+                setIsLoading(false);
             });
 
         return () => {
             isCancelled = true;
             // No disposal here; persistent cache handles it
         };
-    }, [photo.id, gl, texture]);
+    }, [photo.id, gl]);
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -124,21 +144,38 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
 
     return (
         <group position={position} rotation={rotation}>
-            {/* Main Photo Mesh */}
-            <mesh
-                ref={meshRef}
-                onClick={(e) => { e.stopPropagation(); onClick(photo); }}
-                onPointerOver={() => { document.body.style.cursor = 'pointer'; setHovered(true); }}
-                onPointerOut={() => { document.body.style.cursor = 'auto'; setHovered(false); }}
-            >
-                <planeGeometry args={[width, height]} />
-                <meshBasicMaterial
-                    map={texture || undefined}
-                    side={THREE.DoubleSide}
-                    transparent
-                    opacity={hovered ? 1 : 0.9}
-                />
-            </mesh>
+            {/* PROGRESSIVE HYDRA LOADING: Show glass placeholder until texture is ready */}
+            {isLoading && (
+                <mesh>
+                    <planeGeometry args={[width, height]} />
+                    <meshPhysicalMaterial
+                        transparent
+                        opacity={0.3}
+                        roughness={0.1}
+                        transmission={0.8}
+                        thickness={1}
+                        color="#ffffff"
+                    />
+                </mesh>
+            )}
+
+            {/* Main Photo Mesh - only visible when texture exists */}
+            {texture && (
+                <mesh
+                    ref={meshRef}
+                    onClick={(e) => { e.stopPropagation(); onClick(photo); }}
+                    onPointerOver={() => { document.body.style.cursor = 'pointer'; setHovered(true); }}
+                    onPointerOut={() => { document.body.style.cursor = 'default'; setHovered(false); }}
+                >
+                    <planeGeometry args={[width, height]} />
+                    <meshBasicMaterial
+                        map={texture}
+                        transparent={true}
+                        side={THREE.DoubleSide}
+                        toneMapped={false}
+                    />
+                </mesh>
+            )}
 
             {/* Border / Frame */}
             <mesh position={[0, 0, -0.01]}>
