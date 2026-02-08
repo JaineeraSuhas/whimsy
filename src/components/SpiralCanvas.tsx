@@ -72,18 +72,8 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 <meshBasicMaterial
                     map={texture || undefined}
                     side={THREE.DoubleSide}
-                    transparent
-                    opacity={hovered ? 1 : 0.9}
                 />
             </mesh>
-
-            {/* Border / Frame */}
-            <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[width + 0.05, height + 0.05]} />
-                <meshBasicMaterial color={hovered ? "#FF4D00" : "#FFFFFF"} opacity={0.3} transparent />
-            </mesh>
-
-
         </group>
     );
 }

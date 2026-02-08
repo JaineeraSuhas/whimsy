@@ -40,7 +40,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                 img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const MAX_WIDTH = 1024; // Increased from 300 for better clarity 
+                    const MAX_WIDTH = 800; // Optimized for mobile performance
                     const scaleSize = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
                     canvas.height = img.height * scaleSize;
@@ -70,18 +70,15 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                         // Save photo first
                         await savePhoto(newPhoto);
 
-                        // Then detect faces in background
-                        setStatusMessage('Detecting faces...');
-                        try {
-                            await processFacesInPhoto(newPhoto);
-                        } catch (e) {
+                        // Then detect faces in background (non-blocking)
+                        processFacesInPhoto(newPhoto).catch(e => {
                             console.warn("Face detection failed for", file.name, e);
-                        }
+                        });
 
                         URL.revokeObjectURL(objectUrl);
                         resolve();
 
-                    }, 'image/jpeg', 0.9);
+                    }, 'image/jpeg', 0.95); // Higher quality for better display
                 };
                 img.src = objectUrl;
 
