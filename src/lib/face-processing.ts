@@ -206,6 +206,8 @@ export async function updatePeopleClusters(): Promise<void> {
         console.error('[Face Processing] ❌ Error updating people clusters:', error);
     } finally {
         isClustering = false;
+        // Small delay to ensure UI has time to acknowledge 'clustering' before 'idle'
+        setTimeout(() => setState('idle'), 100);
     }
 }
 

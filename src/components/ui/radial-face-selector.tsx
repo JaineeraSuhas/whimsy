@@ -20,7 +20,8 @@ interface RadialFaceSelectorProps {
 export type Person = {
     id: string;
     name: string;
-    thumbnailUrl: string;
+    thumbnailUrl?: string; // Optional legacy support
+    thumbnailBlob?: Blob;  // New preferred way
     photoCount: number;
 };
 
@@ -57,6 +58,32 @@ export function RadialFaceSelector({
 }: RadialFaceSelectorProps) {
     const step = people.length > 0 ? 360 / people.length : 0;
     const [scope, animate] = useAnimate();
+
+    // Manage Blob URLs locally to prevent leaks
+    const [objectUrls, setObjectUrls] = React.useState<Record<string, string>>({});
+
+    React.useEffect(() => {
+        const newUrls: Record<string, string> = {};
+
+        people.forEach(p => {
+            if (p.thumbnailBlob) {
+                newUrls[p.id] = URL.createObjectURL(p.thumbnailBlob);
+            } else if (p.thumbnailUrl) {
+                newUrls[p.id] = p.thumbnailUrl;
+            }
+        });
+
+        setObjectUrls(newUrls);
+
+        return () => {
+            // Revoke only the ones we created (from blobs)
+            people.forEach(p => {
+                if (p.thumbnailBlob && newUrls[p.id]) {
+                    URL.revokeObjectURL(newUrls[p.id]);
+                }
+            });
+        };
+    }, [people]); // Re-run if people change
 
     React.useEffect(() => {
         const root = scope.current;
@@ -160,8 +187,7 @@ export function RadialFaceSelector({
                             style={{
                                 width: imageSize,
                                 height: imageSize,
-                                opacity: i === 0 ? 1 : 0,
-                                backgroundImage: `url(${person.thumbnailUrl})`,
+                                backgroundImage: `url(${objectUrls[person.id] || ''})`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
                             }}
