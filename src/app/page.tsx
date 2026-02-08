@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, stagger, useAnimate } from "motion/react";
 import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
@@ -25,12 +25,22 @@ const exampleImages = [
   "/images/WhatsApp Image 2026-02-07 at 9.45.19 PM (6).jpeg",
 ];
 
+import type { FloatingHandle } from '@/components/ui/parallax-floating';
+
 const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
   const [scope, animate] = useAnimate();
+  const floatingRef = useRef<FloatingHandle>(null);
 
   useEffect(() => {
     animate("img", { opacity: [0, 1] }, { duration: 0.5, delay: stagger(0.15) });
   }, [animate]);
+
+  const handleEnter = async () => {
+    if (floatingRef.current) {
+      await floatingRef.current.requestAccess();
+    }
+    onEnter();
+  };
 
   return (
     <div
@@ -47,14 +57,14 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           whimsy.
         </p>
         <p
-          onClick={onEnter}
+          onClick={handleEnter}
           className="text-xs z-50 hover:scale-110 transition-transform bg-white text-black rounded-full py-2 px-6 cursor-pointer font-medium"
         >
           Enter Arena
         </p>
       </motion.div>
 
-      <Floating sensitivity={-1} className="overflow-hidden">
+      <Floating ref={floatingRef} sensitivity={-1} className="overflow-hidden">
         <FloatingElement depth={0.5} className="top-[8%] left-[11%]">
           <motion.img
             initial={{ opacity: 0 }}

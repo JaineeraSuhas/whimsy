@@ -8,6 +8,8 @@ import {
     useContext,
     useEffect,
     useRef,
+    forwardRef,
+    useImperativeHandle
 } from "react"
 import { useAnimationFrame } from "motion/react"
 
@@ -28,13 +30,17 @@ interface FloatingProps {
     easingFactor?: number
 }
 
-const Floating = ({
+export interface FloatingHandle {
+    requestAccess: () => Promise<void>;
+}
+
+const Floating = forwardRef<FloatingHandle, FloatingProps>(({
     children,
     className,
     sensitivity = 1,
     easingFactor = 0.05,
     ...props
-}: FloatingProps) => {
+}, ref) => {
     const containerRef = useRef<HTMLDivElement>(null)
     const elementsMap = useRef(
         new Map<
@@ -46,7 +52,11 @@ const Floating = ({
             }
         >()
     )
-    const mousePositionRef = useMousePositionRef(containerRef as RefObject<HTMLElement>)
+    const { positionRef, requestAccess } = useMousePositionRef(containerRef as RefObject<HTMLElement>)
+
+    useImperativeHandle(ref, () => ({
+        requestAccess
+    }));
 
     const registerElement = useCallback(
         (id: string, element: HTMLDivElement, depth: number) => {
@@ -70,8 +80,8 @@ const Floating = ({
             const strength = (data.depth * sensitivity) / 20
 
             // Calculate new target position
-            const newTargetX = mousePositionRef.current.x * strength
-            const newTargetY = mousePositionRef.current.y * strength
+            const newTargetX = positionRef.current.x * strength
+            const newTargetY = positionRef.current.y * strength
 
             // Check if we need to update
             const dx = newTargetX - data.currentPosition.x
@@ -96,7 +106,9 @@ const Floating = ({
             </div>
         </FloatingContext.Provider>
     )
-}
+})
+
+Floating.displayName = "Floating";
 
 export default Floating
 

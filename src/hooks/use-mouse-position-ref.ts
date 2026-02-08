@@ -1,9 +1,30 @@
-import { RefObject, useEffect, useRef } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
+
+interface DeviceOrientationEventiOS extends DeviceOrientationEvent {
+    requestPermission?: () => Promise<'granted' | 'denied'>;
+}
 
 export const useMousePositionRef = (
     containerRef?: RefObject<HTMLElement | SVGElement>
 ) => {
     const positionRef = useRef({ x: 0, y: 0 });
+    const [permissionGranted, setPermissionGranted] = useState(false);
+
+    const requestAccess = async () => {
+        if (typeof (DeviceOrientationEvent as unknown as DeviceOrientationEventiOS).requestPermission === 'function') {
+            try {
+                const permissionState = await (DeviceOrientationEvent as unknown as DeviceOrientationEventiOS).requestPermission!();
+                if (permissionState === 'granted') {
+                    setPermissionGranted(true);
+                }
+            } catch (e) {
+                console.error("Error requesting device orientation permission", e);
+            }
+        } else {
+            // Non-iOS or older devices usually don't need permission
+            setPermissionGranted(true);
+        }
+    };
 
     useEffect(() => {
         const updatePosition = (x: number, y: number) => {
@@ -49,14 +70,17 @@ export const useMousePositionRef = (
         // Listen for mouse, touch, and device orientation events
         window.addEventListener("mousemove", handleMouseMove);
         window.addEventListener("touchmove", handleTouchMove, { passive: false });
-        window.addEventListener("deviceorientation", handleDeviceOrientation);
+
+        if (permissionGranted) {
+            window.addEventListener("deviceorientation", handleDeviceOrientation);
+        }
 
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("touchmove", handleTouchMove);
             window.removeEventListener("deviceorientation", handleDeviceOrientation);
         };
-    }, [containerRef]);
+    }, [containerRef, permissionGranted]);
 
-    return positionRef;
+    return { positionRef, requestAccess, permissionGranted };
 };
