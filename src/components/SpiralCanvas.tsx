@@ -7,7 +7,7 @@ import { OrbitControls, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getAllPhotos, Photo } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
-import { Grid3x3, Circle, LayoutGrid, Waves, Dna, Cylinder, Settings } from 'lucide-react';
+import { Grid3x3, Circle, Sparkles, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
 // 1. Precise Global Cache to persist textures across re-renders
 class GlobalTextureCache {
@@ -107,12 +107,16 @@ class TextureLoaderSystem {
     }
 }
 
-function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number }) {
+function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number, layoutMode: string }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(() => GlobalTextureCache.get(photo.id) || null);
     const [isLoading, setIsLoading] = useState(!GlobalTextureCache.get(photo.id));
     const [hovered, setHovered] = useState(false);
-    const { gl } = useThree();
+    const { gl, camera } = useThree();
+
+    // Random drift parameters for particles
+    const driftSpeed = useMemo(() => Math.random() * 0.2 + 0.1, []);
+    const driftOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
     useEffect(() => {
         if (texture) return;
@@ -147,8 +151,18 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
 
     useFrame((state) => {
         if (meshRef.current) {
-            // Subtle floating animation
-            meshRef.current.position.y += Math.sin(state.clock.elapsedTime + position[0]) * 0.001;
+            // Enhanced floating for particles
+            if (layoutMode === 'particles') {
+                // Float up and down
+                meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
+                // Gentle rotation
+                meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
+                // Look at camera for particles to make them engaging
+                meshRef.current.lookAt(camera.position);
+            } else {
+                // Standard subtle float for other modes
+                meshRef.current.position.y += Math.sin(state.clock.elapsedTime + position[0]) * 0.001;
+            }
         }
     });
 
@@ -204,8 +218,14 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
 }
 
 // Helper to get positions based on layout
-function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
+function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
     const isMobile = viewport.width < 768; // Simple breakpoint check
+
+    // Deterministic random generator for consistent particle positions per photo
+    const seededRandom = (seed: number) => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    };
 
     return photos.map((photo, index) => {
         let pos: [number, number, number] = [0, 0, 0];
@@ -242,12 +262,17 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
             const euler = new THREE.Euler().setFromRotationMatrix(rotMatrix);
             rot = [euler.x, euler.y, euler.z];
         }
-        else if (layout === 'grid') {
-            const cols = isMobile ? 2 : Math.ceil(Math.sqrt(photos.length));
-            const spacing = isMobile ? 2.0 : 2.5;
-            const x = (index % cols) * spacing - (cols * spacing) / 2;
-            const y = Math.floor(index / cols) * spacing - (Math.ceil(photos.length / cols) * spacing) / 2;
-            pos = [x, y, 0];
+        else if (layout === 'particles') {
+            // Random Cloud / Particles
+            // Use index as seed to keep positions stable across calls
+            const rX = seededRandom(index * 13.5) - 0.5;
+            const rY = seededRandom(index * 27.2) - 0.5;
+            const rZ = seededRandom(index * 41.9) - 0.5;
+
+            const spread = isMobile ? 20 : 35;
+
+            pos = [rX * spread, rY * spread, rZ * spread];
+            // Rotation is handled by lookAt in useFrame, init to 0
             rot = [0, 0, 0];
         }
         else if (layout === 'wave') {
@@ -282,7 +307,7 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
     });
 }
 
-function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder' }) {
+function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder' }) {
     const { camera, viewport } = useThree();
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
@@ -298,6 +323,7 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spi
                     <PhotoMesh
                         key={item.photo.id}
                         {...item}
+                        layoutMode={layoutMode}
                         onClick={setSelectedPhoto}
                     />
                 ))}
@@ -321,26 +347,15 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spi
     );
 }
 
-// function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void }) {
-// ... inside PhotoMesh
-//     const loader = new THREE.TextureLoader();
-//     loader.load(url, (tex) => {
-//         tex.anisotropy = 16;
-//         tex.minFilter = THREE.LinearMipMapLinearFilter;
-//         tex.magFilter = THREE.LinearFilter;
-//         tex.colorSpace = THREE.SRGBColorSpace;
-//         setTexture(tex);
-//         ...
-
 interface SpiralCanvasProps {
     photos: Photo[];
-    externalLayoutMode?: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder';
-    onLayoutChange?: (mode: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder') => void;
+    externalLayoutMode?: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder';
+    onLayoutChange?: (mode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder') => void;
     onClearPhotos?: () => void;
 }
 
 export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChange, onClearPhotos }: SpiralCanvasProps) {
-    const [internalLayoutMode, setInternalLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
+    const [internalLayoutMode, setInternalLayoutMode] = useState<'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('spiral');
     const layoutMode = externalLayoutMode || internalLayoutMode;
     const setLayoutMode = onLayoutChange || setInternalLayoutMode;
 
@@ -361,7 +376,7 @@ export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChang
     const layoutOptions = [
         { id: 'layout-spiral', value: 'spiral', label: 'Spiral' },
         { id: 'layout-sphere', value: 'sphere', label: 'Sphere' },
-        { id: 'layout-grid', value: 'grid', label: 'Grid' },
+        { id: 'layout-particles', value: 'particles', label: 'Particles' },
         { id: 'layout-wave', value: 'wave', label: 'Wave' },
         { id: 'layout-helix', value: 'helix', label: 'Helix' },
         { id: 'layout-cylinder', value: 'cylinder', label: 'Cylinder' },
@@ -399,10 +414,10 @@ export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChang
                                 isActive: layoutMode === 'sphere'
                             },
                             {
-                                label: 'Grid',
-                                icon: <LayoutGrid size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('grid'),
-                                isActive: layoutMode === 'grid'
+                                label: 'Particles',
+                                icon: <Sparkles size={16} className="text-white" />,
+                                onClick: () => setLayoutMode('particles'),
+                                isActive: layoutMode === 'particles'
                             },
                             {
                                 label: 'Wave',
