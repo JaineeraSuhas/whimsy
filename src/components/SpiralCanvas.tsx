@@ -71,6 +71,7 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
                 <planeGeometry args={[width, height]} />
                 <meshBasicMaterial
                     map={texture || undefined}
+                    color={texture ? "#ffffff" : "#1a1a1a"}
                     side={THREE.DoubleSide}
                 />
             </mesh>
@@ -240,8 +241,8 @@ export default function SpiralCanvas({ photos }: { photos: Photo[] }) {
 
     return (
         <div className="w-full h-full relative">
-            {/* HUD / Controls Overlay */}
-            <div className="absolute left-8 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-4 pointer-events-none">
+            {/* HUD / Controls Overlay - Left-center on desktop, bottom-right on mobile */}
+            <div className="absolute md:left-8 md:top-1/2 md:-translate-y-1/2 bottom-20 right-4 z-10 flex flex-col gap-4 pointer-events-none">
                 {/* Layout Circle Menu */}
                 <div className="pointer-events-auto">
                     <CircleMenu
@@ -287,8 +288,8 @@ export default function SpiralCanvas({ photos }: { photos: Photo[] }) {
                 </div>
             </div>
 
-            {/* Settings - Positioned at Bottom Left */}
-            <div className="absolute bottom-24 left-8 z-10 flex flex-col gap-3 pointer-events-none">
+            {/* Settings - Bottom-left on desktop, top-left on mobile */}
+            <div className="absolute md:bottom-24 md:left-8 top-20 left-4 z-10 flex flex-col gap-3 pointer-events-none">
                 {/* Settings Button */}
                 <button
                     onClick={() => setShowSettings(!showSettings)}
