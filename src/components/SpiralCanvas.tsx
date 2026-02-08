@@ -21,14 +21,36 @@ class GlobalTextureCache {
     }
 }
 
-// 2. Unified Loader: Parallel for Everyone (Mobile + Desktop)
+// 2. High-Performance Buffered Loader
+// Uses ImageBitmap for off-thread decoding and limits concurrency to prevent UI stutter
 class TextureLoaderSystem {
-    // No more serial queue needed - we want instant visibility like desktop
+    private static activeLoads = 0;
+    private static maxConcurrency = 6; // Sweet spot for HTTP/1.1 and blob decoding
+    private static queue: (() => void)[] = [];
+
     static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
         return new Promise((resolve, reject) => {
-            new THREE.TextureLoader().load(
-                url,
-                (tex) => {
+            const loadTask = async () => {
+                try {
+                    let tex: THREE.Texture;
+
+                    // FAST PATH: Use ImageBitmap (supported on most modern browsers & mobile)
+                    // This decodes images off the main thread, reducing UI freeze
+                    if (typeof createImageBitmap !== 'undefined') {
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        const imageBitmap = await createImageBitmap(blob, {
+                            premultiplyAlpha: 'none',
+                            colorSpaceConversion: 'none'
+                        });
+                        tex = new THREE.CanvasTexture(imageBitmap);
+                    } else {
+                        // FALLBACK: Standard Loader
+                        const loader = new THREE.TextureLoader();
+                        tex = await loader.loadAsync(url);
+                    }
+
+                    // Optimal Settings for Quality & Performance
                     const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
                     tex.anisotropy = Math.min(maxAnisotropy, 16);
                     tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -36,12 +58,31 @@ class TextureLoaderSystem {
                     tex.generateMipmaps = true;
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.needsUpdate = true;
+
                     resolve(tex);
-                },
-                undefined,
-                reject
-            );
+                } catch (err) {
+                    console.warn(`[TextureLoader] Failed ${id}:`, err);
+                    reject(err);
+                } finally {
+                    this.activeLoads--;
+                    this.processQueue();
+                }
+            };
+
+            this.queue.push(loadTask);
+            this.processQueue();
         });
+    }
+
+    private static processQueue() {
+        if (this.queue.length === 0) return;
+        if (this.activeLoads >= this.maxConcurrency) return;
+
+        const task = this.queue.shift();
+        if (task) {
+            this.activeLoads++;
+            task();
+        }
     }
 }
 
