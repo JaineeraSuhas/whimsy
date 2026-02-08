@@ -13,6 +13,7 @@ export interface FaceDetection {
     descriptor: Float32Array; // face-api.js descriptor (128 dimensions)
     landmarks?: any;
     score?: number; // Detection confidence score
+    skinTone?: { r: number; g: number; b: number }; // Average color of central face region
 }
 
 /**
@@ -80,6 +81,34 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
         const faces: FaceDetection[] = detections.map((detection, index) => {
             const box = detection.detection.box;
 
+            // Sample skin tone from the center of the face
+            let skinTone = { r: 0, g: 0, b: 0 };
+            try {
+                const sampleCanvas = document.createElement('canvas');
+                sampleCanvas.width = 10;
+                sampleCanvas.height = 10;
+                const sampleCtx = sampleCanvas.getContext('2d');
+                if (sampleCtx) {
+                    // Draw a small central portion of the face
+                    const cx = box.x + box.width * 0.4;
+                    const cy = box.y + box.height * 0.4;
+                    const cw = box.width * 0.2;
+                    const ch = box.height * 0.2;
+                    sampleCtx.drawImage(img, cx, cy, cw, ch, 0, 0, 10, 10);
+                    const data = sampleCtx.getImageData(0, 0, 10, 10).data;
+                    let r = 0, g = 0, b = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        r += data[i];
+                        g += data[i + 1];
+                        b += data[i + 2];
+                    }
+                    const count = data.length / 4;
+                    skinTone = { r: r / count, g: g / count, b: b / count };
+                }
+            } catch (e) {
+                console.error('Failed to sample skin tone', e);
+            }
+
             return {
                 id: `face-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
                 box: {
@@ -91,6 +120,7 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                 descriptor: detection.descriptor as Float32Array,
                 landmarks: detection.landmarks,
                 score: detection.detection.score,
+                skinTone,
             };
         });
 

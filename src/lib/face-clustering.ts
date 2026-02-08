@@ -3,72 +3,68 @@ import { FaceDetection, faceDistance } from './face-detection';
 export interface FaceCluster {
     id: string;
     faceIds: string[];
-    centroid: Float32Array;
+    anchors: Float32Array[]; // Multiple high-quality descriptors for different poses
+    skinTone?: { r: number; g: number; b: number };
     photoCount: number;
-    representativeFaceId: string; // The face used for thumbnail
+    representativeFaceId: string;
+}
+
+/**
+ * Calculate similarity between skin tones
+ */
+function skinToneSimilarity(t1?: { r: number, g: number, b: number }, t2?: { r: number, g: number, b: number }): number {
+    if (!t1 || !t2) return 1.0;
+    const dist = Math.sqrt(
+        Math.pow(t1.r - t2.r, 2) +
+        Math.pow(t1.g - t2.g, 2) +
+        Math.pow(t1.b - t2.b, 2)
+    );
+    // Normalize: 441.67 is max color distance. Return distance where 0 is perfect match.
+    return dist / 441.67;
 }
 
 /**
  * Calculate similarity metrics between two faces
- * @returns weighted distance (lower is better, < 0.35 is good match)
  */
 function calculateWeightedDistance(face1: FaceDetection, face2: FaceDetection): number {
-    // 1. Embedding distance (70% weight)
+    // 1. Embedding distance (65% weight)
     const dist = faceDistance(face1.descriptor, face2.descriptor);
 
-    // 2. Face shape ratio distance (15% weight)
+    // 2. Face shape ratio distance (10% weight)
     const ratio1 = face1.box.height / face1.box.width;
     const ratio2 = face2.box.height / face2.box.width;
     const ratioDist = Math.abs(ratio1 - ratio2);
 
     // 3. Landmark proportions (15% weight)
-    // Using relative distances (normalized) to be scale-invariant
     let landmarkDist = 0;
     if (face1.landmarks && face2.landmarks) {
         try {
             const getProp = (lm: any) => {
-                const positions = lm.positions;
-                // Eye centers (approximate from range)
-                const leftEye = positions[36]; // roughly
-                const rightEye = positions[45]; // roughly
-                const nose = positions[30]; // nose tip
-                const mouth = positions[62]; // mouth center
-
-                const eyeDist = Math.sqrt(Math.pow(leftEye.x - rightEye.x, 2) + Math.pow(leftEye.y - rightEye.y, 2));
-                const eyeToNose = Math.sqrt(Math.pow((leftEye.x + rightEye.x) / 2 - nose.x, 2) + Math.pow((leftEye.y + rightEye.y) / 2 - nose.y, 2));
-                const eyeToMouth = Math.sqrt(Math.pow((leftEye.x + rightEye.x) / 2 - mouth.x, 2) + Math.pow((leftEye.y + rightEye.y) / 2 - mouth.y, 2));
-
-                return {
-                    prop1: eyeToNose / eyeDist,
-                    prop2: eyeToMouth / eyeDist
-                };
+                const pos = lm.positions;
+                const eyeDist = Math.sqrt(Math.pow(pos[36].x - pos[45].x, 2) + Math.pow(pos[36].y - pos[45].y, 2));
+                const eyeToNose = Math.sqrt(Math.pow((pos[36].x + pos[45].x) / 2 - pos[30].x, 2) + Math.pow((pos[36].y + pos[45].y) / 2 - pos[30].y, 2));
+                return eyeToNose / eyeDist;
             };
-
             const p1 = getProp(face1.landmarks);
             const p2 = getProp(face2.landmarks);
-
-            landmarkDist = (Math.abs(p1.prop1 - p2.prop1) + Math.abs(p2.prop2 - p2.prop2)) / 2;
-        } catch (e) {
-            landmarkDist = 0;
-        }
+            landmarkDist = Math.abs(p1 - p2);
+        } catch (e) { landmarkDist = 0; }
     }
 
-    // Weighted sum
-    // normalize distances to ~0-1 range roughly
-    const weightedDist = (dist * 0.70) + (Math.min(ratioDist, 1) * 0.15) + (Math.min(landmarkDist, 1) * 0.15);
+    // 4. Skin tone similarity (10% weight)
+    const toneDist = skinToneSimilarity(face1.skinTone, face2.skinTone);
 
-    return weightedDist;
+    return (dist * 0.65) + (Math.min(ratioDist, 1) * 0.10) + (Math.min(landmarkDist, 1) * 0.15) + (toneDist * 0.10);
 }
 
 /**
- * Cluster faces using multi-factor similarity
+ * Cluster faces using multi-anchor person profiles
  */
 export function clusterFaces(
-    allFaces: Map<string, FaceDetection[]>, // photoId -> faces
-    distanceThreshold: number = 0.35 // Consistent with implementation plan
+    allFaces: Map<string, FaceDetection[]>,
+    distanceThreshold: number = 0.30 // Harder threshold to avoid duplicates
 ): FaceCluster[] {
     const facesWithPhotos: Array<{ face: FaceDetection; photoId: string }> = [];
-
     for (const [photoId, faces] of allFaces.entries()) {
         for (const face of faces) {
             facesWithPhotos.push({ face, photoId });
@@ -80,29 +76,26 @@ export function clusterFaces(
     const clusters: FaceCluster[] = [];
     const assigned = new Set<string>();
 
-    // Store best quality face for each cluster
-    const clusterBestFaces = new Map<string, { face: FaceDetection; score: number }>();
-
-    // Sort by detection score to process highest quality faces first (anchors)
+    // Process high-quality frontal faces first to build stable profiles
     facesWithPhotos.sort((a, b) => (b.face.score || 0) - (a.face.score || 0));
 
-    for (let i = 0; i < facesWithPhotos.length; i++) {
-        const { face, photoId } = facesWithPhotos[i];
+    for (const { face, photoId } of facesWithPhotos) {
         if (assigned.has(face.id)) continue;
 
         let matchedCluster: FaceCluster | null = null;
         let minDistance = Infinity;
 
         for (const cluster of clusters) {
-            const anchor = clusterBestFaces.get(cluster.id)?.face;
-            if (!anchor) continue;
+            // Check against ALL anchors in the profile
+            for (const anchorDescriptor of cluster.anchors) {
+                // Approximate face for distance calculation
+                const anchorFace = { ...face, descriptor: anchorDescriptor, skinTone: cluster.skinTone };
+                const distance = calculateWeightedDistance(face, anchorFace);
 
-            // Use weighted distance comparing to high-quality anchor
-            const distance = calculateWeightedDistance(face, anchor);
-
-            if (distance < distanceThreshold && distance < minDistance) {
-                matchedCluster = cluster;
-                minDistance = distance;
+                if (distance < distanceThreshold && distance < minDistance) {
+                    matchedCluster = cluster;
+                    minDistance = distance;
+                }
             }
         }
 
@@ -110,37 +103,28 @@ export function clusterFaces(
             matchedCluster.faceIds.push(face.id);
             assigned.add(face.id);
 
-            // Update representative face if this one is better quality
-            const currentBest = clusterBestFaces.get(matchedCluster.id);
-            if (!currentBest || (face.score || 0) > currentBest.score) {
-                clusterBestFaces.set(matchedCluster.id, { face, score: face.score || 0 });
-                matchedCluster.representativeFaceId = face.id;
+            // If this face is quite different from existing anchors but matched, 
+            // add it as a new anchor to the profile (pose learning)
+            const existsNearAnchor = matchedCluster.anchors.some(a => faceDistance(face.descriptor, a) < 0.2);
+            if (!existsNearAnchor && matchedCluster.anchors.length < 5) {
+                matchedCluster.anchors.push(new Float32Array(face.descriptor));
             }
-
-            // Update centroid
-            const n = matchedCluster.faceIds.length;
-            for (let j = 0; j < matchedCluster.centroid.length; j++) {
-                matchedCluster.centroid[j] = (matchedCluster.centroid[j] * (n - 1) + face.descriptor[j]) / n;
-            }
-
         } else {
-            // Create new cluster
+            // New Person detected
             const clusterId = `person-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            const newCluster: FaceCluster = {
+            clusters.push({
                 id: clusterId,
                 faceIds: [face.id],
-                centroid: new Float32Array(face.descriptor),
+                anchors: [new Float32Array(face.descriptor)],
+                skinTone: face.skinTone,
                 photoCount: 1,
                 representativeFaceId: face.id,
-            };
-
+            });
             assigned.add(face.id);
-            clusters.push(newCluster);
-            clusterBestFaces.set(clusterId, { face, score: face.score || 0 });
         }
     }
 
-    // Update photo counts
+    // Post-process photo counts and representatives
     for (const cluster of clusters) {
         const photoIds = new Set<string>();
         for (const faceId of cluster.faceIds) {
@@ -159,18 +143,18 @@ export function clusterFaces(
 export function assignFaceToCluster(
     face: FaceDetection,
     clusters: FaceCluster[],
-    distanceThreshold: number = 0.35
+    distanceThreshold: number = 0.30
 ): string | null {
     let bestMatch: { clusterId: string; distance: number } | null = null;
 
     for (const cluster of clusters) {
-        // Find a representative high quality face for this cluster if possible, 
-        // fall back to comparing with centroid (approximate)
-        const distance = faceDistance(face.descriptor, cluster.centroid);
-
-        if (distance < distanceThreshold) {
-            if (!bestMatch || distance < bestMatch.distance) {
-                bestMatch = { clusterId: cluster.id, distance };
+        // Compare with all anchors
+        for (const anchor of cluster.anchors) {
+            const dist = faceDistance(face.descriptor, anchor);
+            if (dist < distanceThreshold) {
+                if (!bestMatch || dist < bestMatch.distance) {
+                    bestMatch = { clusterId: cluster.id, distance: dist };
+                }
             }
         }
     }

@@ -26,6 +26,8 @@ export interface DetectedPerson {
     id: string;
     name: string; // Auto-generated or user-assigned
     faceIds: string[]; // IDs of faces belonging to this person
+    anchors?: Float32Array[]; // High-quality descriptors (poses)
+    skinTone?: { r: number; g: number; b: number };
     thumbnailBlob: Blob; // Face thumbnail
     photoCount: number; // Number of photos containing this person
     createdAt: number;

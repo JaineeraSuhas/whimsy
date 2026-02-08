@@ -128,6 +128,8 @@ export async function updatePeopleClusters(): Promise<void> {
                 id: cluster.id,
                 name: `Person ${i + 1}`,
                 faceIds: cluster.faceIds,
+                anchors: cluster.anchors,
+                skinTone: cluster.skinTone,
                 thumbnailBlob,
                 photoCount: cluster.photoCount,
                 createdAt: Date.now(),

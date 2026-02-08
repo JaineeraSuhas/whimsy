@@ -1,4 +1,4 @@
-import { Users, Grid, Settings } from 'lucide-react';
+import { Users, Grid, Settings, Library } from 'lucide-react';
 
 interface MobileBottomNavProps {
     filterMode: 'all' | 'people';
@@ -14,39 +14,39 @@ export default function MobileBottomNav({
     onLayoutClick
 }: MobileBottomNavProps) {
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-t border-white/10 safe-area-bottom">
-            <div className="flex items-center justify-around px-4 py-3">
-                {/* All Photos */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-2xl border-t border-white/5 safe-area-bottom">
+            <div className="flex items-center justify-around px-2 pt-2 pb-6">
+                {/* Library (All Photos) */}
                 <button
                     onClick={() => onFilterChange('all')}
-                    className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${filterMode === 'all'
-                            ? 'bg-white/20 text-white'
-                            : 'text-white/60'
+                    className={`flex flex-col items-center gap-1.5 px-6 py-2 transition-all duration-300 ${filterMode === 'all'
+                        ? 'text-white'
+                        : 'text-white/30'
                         }`}
                 >
-                    <Grid className="w-5 h-5" />
-                    <span className="text-xs font-medium">All</span>
+                    <Library className={`w-6 h-6 transition-transform ${filterMode === 'all' ? 'scale-110' : 'scale-100'}`} />
+                    <span className="text-[10px] font-bold tracking-tight">Library</span>
                 </button>
 
                 {/* People */}
                 <button
                     onClick={() => onFilterChange('people')}
-                    className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${filterMode === 'people'
-                            ? 'bg-white/20 text-white'
-                            : 'text-white/60'
+                    className={`flex flex-col items-center gap-1.5 px-6 py-2 transition-all duration-300 ${filterMode === 'people'
+                        ? 'text-white'
+                        : 'text-white/30'
                         }`}
                 >
-                    <Users className="w-5 h-5" />
-                    <span className="text-xs font-medium">People</span>
+                    <Users className={`w-6 h-6 transition-transform ${filterMode === 'people' ? 'scale-110' : 'scale-100'}`} />
+                    <span className="text-[10px] font-bold tracking-tight">People</span>
                 </button>
 
                 {/* Settings */}
                 <button
                     onClick={onSettingsClick}
-                    className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl text-white/60 transition-all active:bg-white/10"
+                    className="flex flex-col items-center gap-1.5 px-6 py-2 text-white/30 transition-all active:scale-95 duration-200"
                 >
-                    <Settings className="w-5 h-5" />
-                    <span className="text-xs font-medium">Settings</span>
+                    <Settings className="w-6 h-6" />
+                    <span className="text-[10px] font-bold tracking-tight">Settings</span>
                 </button>
             </div>
         </div>
