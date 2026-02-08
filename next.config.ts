@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
       fs: false,
       path: false,
       crypto: false,
+      encoding: false, // Fix for face-api.js/node-fetch issues on Vercel
     };
     return config;
   },
