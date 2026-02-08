@@ -5,7 +5,7 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { getAllPhotos, Photo, clearAllPhotos } from '@/lib/db';
+import { getAllPhotos, Photo } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, LayoutGrid, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
@@ -242,21 +242,15 @@ interface SpiralCanvasProps {
     photos: Photo[];
     externalLayoutMode?: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder';
     onLayoutChange?: (mode: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder') => void;
+    onClearPhotos?: () => void;
 }
 
-export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChange }: SpiralCanvasProps) {
+export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChange, onClearPhotos }: SpiralCanvasProps) {
     const [internalLayoutMode, setInternalLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
     const layoutMode = externalLayoutMode || internalLayoutMode;
     const setLayoutMode = onLayoutChange || setInternalLayoutMode;
 
     const [showSettings, setShowSettings] = useState(false);
-
-    const handleClearStorage = async () => {
-        if (confirm('Are you sure you want to delete all photos? This cannot be undone.')) {
-            await clearAllPhotos();
-            window.location.reload();
-        }
-    };
 
     const layoutOptions = [
         { id: 'layout-spiral', value: 'spiral', label: 'Spiral' },
@@ -343,7 +337,7 @@ export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChang
                     <div className="p-4 rounded-2xl glass bg-black/80 backdrop-blur-md border border-white/10 pointer-events-auto w-56">
                         <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium">Actions</p>
                         <button
-                            onClick={handleClearStorage}
+                            onClick={onClearPhotos}
                             className="w-full px-4 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-500/30"
                         >
                             Clear All Photos

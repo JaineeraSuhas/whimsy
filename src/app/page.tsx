@@ -5,7 +5,7 @@ import { motion, stagger, useAnimate, AnimatePresence } from "motion/react";
 import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
 import Floating, { FloatingElement } from '@/components/ui/parallax-floating';
-import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName } from '@/lib/db';
+import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName, clearAllPhotos } from '@/lib/db';
 import { Grid, Users, Plus, Library } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
@@ -199,6 +199,13 @@ export default function Home() {
     setShowSettings(false);
   };
 
+  const handleClearStorage = async () => {
+    if (confirm('Are you sure you want to delete all photos? This cannot be undone.')) {
+      await clearAllPhotos();
+      window.location.reload();
+    }
+  };
+
   if (!showApp) {
     return <HeroSection onEnter={() => setShowApp(true)} />;
   }
@@ -208,7 +215,7 @@ export default function Home() {
 
       {/* 3D Spiral Canvas - Lower z-index to stay below UI */}
       <div className="absolute inset-0 z-0">
-        <SpiralCanvas photos={filteredPhotos} externalLayoutMode={layoutMode} onLayoutChange={setLayoutMode} />
+        <SpiralCanvas photos={filteredPhotos} externalLayoutMode={layoutMode} onLayoutChange={setLayoutMode} onClearPhotos={handleClearStorage} />
       </div>
 
       {/* UI Overlay - Top Status Bar (iOS/macOS Style) */}
@@ -388,7 +395,7 @@ export default function Home() {
             <h2 className="text-3xl font-bold mb-8">Settings</h2>
             <div className="w-full max-w-sm space-y-4">
               <button
-                onClick={() => { if (confirm("Clear all data?")) { localStorage.clear(); window.location.reload(); } }}
+                onClick={handleClearStorage}
                 className="w-full py-4 rounded-2xl bg-red-500/20 text-red-500 border border-red-500/30 font-bold"
               >
                 Reset Library
