@@ -151,17 +151,30 @@ export const getPhotosByPerson = async (personId: string) => {
 };
 
 export const getPhotosByPeople = async (personIds: string[]) => {
+    console.log('[DB] getPhotosByPeople called with IDs:', personIds);
     if (personIds.length === 0) return [];
     const db = await initDB();
 
     // Get all target face IDs from selected people
     const people = await Promise.all(personIds.map(id => db.get('people', id)));
+    console.log('[DB] Retrieved people:', people);
+
     const targetFaceIds = new Set(
         people.flatMap(p => p?.faceIds || [])
     );
+    console.log('[DB] Target Face IDs:', Array.from(targetFaceIds));
 
     const allPhotos = await db.getAll('photos');
-    return allPhotos.filter(photo =>
-        photo.faces?.some(face => targetFaceIds.has(face.id))
-    );
+    console.log(`[DB] Scanning ${allPhotos.length} photos for matches...`);
+
+    const matches = allPhotos.filter(photo => {
+        const hasMatch = photo.faces?.some(face => targetFaceIds.has(face.id));
+        if (hasMatch) {
+            console.log(`[DB] Match found in photo ${photo.id}`);
+        }
+        return hasMatch;
+    });
+
+    console.log(`[DB] Found ${matches.length} matching photos`);
+    return matches;
 };
