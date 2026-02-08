@@ -11,7 +11,7 @@ import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails } from '@/lib/face-processing';
 import MobileBottomNav from '@/components/MobileBottomNav';
-import '@/lib/debug-face-detection'; // Load debug utility
+
 
 const exampleImages = [
   "/images/WhatsApp Image 2026-02-07 at 9.45.16 PM.jpeg",

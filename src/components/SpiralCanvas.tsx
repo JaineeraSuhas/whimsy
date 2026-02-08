@@ -21,20 +21,43 @@ class GlobalTextureCache {
     }
 }
 
-// 2. Strict Serial Loader Queue with ImageBitmap support for mobile stability
-class SerialTextureLoader {
-    private static queue: (() => Promise<void>)[] = [];
+// 2. Dual-Mode Loader: Strict Serial for Mobile, Parallel for Desktop
+class TextureLoaderSystem {
+    private static serialQueue: (() => Promise<void>)[] = [];
     private static isProcessing = false;
 
     static async load(id: string, url: string, gl: THREE.WebGLRenderer): Promise<THREE.Texture> {
+        const isMobile = window.innerWidth < 768;
+
+        // DESKTOP PATH: Instant Parallel Loading (High Quality)
+        if (!isMobile) {
+            return new Promise((resolve, reject) => {
+                new THREE.TextureLoader().load(
+                    url,
+                    (tex) => {
+                        const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                        tex.anisotropy = Math.min(maxAnisotropy, 16);
+                        tex.minFilter = THREE.LinearMipmapLinearFilter;
+                        tex.magFilter = THREE.LinearFilter;
+                        tex.generateMipmaps = true;
+                        tex.colorSpace = THREE.SRGBColorSpace;
+                        tex.needsUpdate = true;
+                        resolve(tex);
+                    },
+                    undefined,
+                    reject
+                );
+            });
+        }
+
+        // MOBILE PATH: Strict Serial Queue (Safe Mode)
         return new Promise((resolve, reject) => {
-            this.queue.push(async () => {
+            this.serialQueue.push(async () => {
                 try {
-                    const isMobile = window.innerWidth < 768;
                     let tex: THREE.Texture;
 
                     // Safari Optimization: Use ImageBitmap if available and on mobile
-                    if (isMobile && typeof createImageBitmap !== 'undefined') {
+                    if (typeof createImageBitmap !== 'undefined') {
                         const response = await fetch(url);
                         const blob = await response.blob();
                         const imageBitmap = await createImageBitmap(blob);
@@ -44,19 +67,11 @@ class SerialTextureLoader {
                         tex = await loader.loadAsync(url);
                     }
 
-                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-
-                    if (isMobile) {
-                        tex.anisotropy = 1;
-                        tex.minFilter = THREE.LinearFilter;
-                        tex.generateMipmaps = false;
-                    } else {
-                        tex.anisotropy = Math.min(maxAnisotropy, 16);
-                        tex.minFilter = THREE.LinearMipmapLinearFilter;
-                        tex.generateMipmaps = true;
-                    }
-
+                    // Low memory settings
+                    tex.anisotropy = 1;
+                    tex.minFilter = THREE.LinearFilter;
                     tex.magFilter = THREE.LinearFilter;
+                    tex.generateMipmaps = false;
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.needsUpdate = true;
 
@@ -65,20 +80,20 @@ class SerialTextureLoader {
                     console.warn(`[SerialLoader] Failed ${id}:`, err);
                     reject(err);
                 }
-                // Extended delay (100ms) for mobile thread stability
+                // Breathable delay (100ms) for mobile thread stability
                 await new Promise(r => setTimeout(r, 100));
             });
 
-            this.process();
+            this.processQueue();
         });
     }
 
-    private static async process() {
-        if (this.isProcessing || this.queue.length === 0) return;
+    private static async processQueue() {
+        if (this.isProcessing || this.serialQueue.length === 0) return;
         this.isProcessing = true;
 
-        while (this.queue.length > 0) {
-            const task = this.queue.shift();
+        while (this.serialQueue.length > 0) {
+            const task = this.serialQueue.shift();
             if (task) {
                 try {
                     await task();
@@ -106,7 +121,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo
         const url = URL.createObjectURL(photo.thumbnail);
 
         setIsLoading(true);
-        SerialTextureLoader.load(photo.id, url, gl)
+        TextureLoaderSystem.load(photo.id, url, gl)
             .then(tex => {
                 if (isCancelled) {
                     tex.dispose();
