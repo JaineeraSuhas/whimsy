@@ -8,6 +8,7 @@ import EXIF from 'exif-js';
 import { savePhoto, Photo } from '@/lib/db';
 import { processFacesInPhoto } from '@/lib/face-processing';
 import { loadFaceDetectionModel } from '@/lib/face-detection';
+import heic2any from 'heic2any';
 
 export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => void }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -38,7 +39,36 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
 
                 // 2. Generate Thumbnail (Canvas) - rudimentary resizing
                 const img = new Image();
-                const objectUrl = URL.createObjectURL(file);
+                let objectUrl = '';
+
+                try {
+                    // Check for HEIC/HEIF
+                    const isHeic = file.name.toLowerCase().endsWith('.heic') ||
+                        file.name.toLowerCase().endsWith('.heif') ||
+                        file.type === 'image/heic' ||
+                        file.type === 'image/heif';
+
+                    if (isHeic) {
+                        setStatusMessage(`Converting ${file.name} from HEIC...`);
+                        console.log(`[Upload] Converting HEIC file: ${file.name}`);
+
+                        const convertedBlob = await heic2any({
+                            blob: file,
+                            toType: 'image/jpeg',
+                            quality: 0.9
+                        });
+
+                        const jpegBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                        objectUrl = URL.createObjectURL(jpegBlob);
+                    } else {
+                        objectUrl = URL.createObjectURL(file);
+                    }
+                } catch (conversionError) {
+                    console.error(`[Upload] HEIC conversion failed for ${file.name}`, conversionError);
+                    setStatusMessage(`Error: Could not convert ${file.name}`);
+                    resolve();
+                    return;
+                }
 
                 // Safeguard: Timeout if image takes too long to load (e.g., corrupted)
                 const loadTimeout = setTimeout(() => {
@@ -141,7 +171,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
-            'image/*': []
+            'image/*': ['.heic', '.heif', '.png', '.jpg', '.jpeg', '.webp']
         }
     });
 
