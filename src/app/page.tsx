@@ -265,14 +265,42 @@ export default function Home() {
         </div>
       </div>
 
-      {/* People Modal - Dedicated iOS Popup Interface */}
+      {/* Desktop Radial Face Selector - Floating Widget */}
+      <div className="hidden md:block">
+        {filterMode === 'people' && people.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, x: 20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.9, x: 20 }}
+            className="absolute bottom-24 right-8 z-40 pointer-events-auto"
+          >
+            <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6">
+              <RadialFaceSelector
+                people={people}
+                selectedPersonIds={selectedPersonIds}
+                onSelectPerson={(id) => {
+                  setSelectedPersonIds(prev =>
+                    prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+                  );
+                }}
+                onUpdateName={async (id, name) => {
+                  await updatePersonName(id, name);
+                  await fetchPhotos();
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* People Modal - Dedicated iOS Popup Interface for Mobile */}
       <AnimatePresence>
         {showPeopleModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black pointer-events-auto"
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black pointer-events-auto md:hidden"
           >
             <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center">
               <h2 className="text-xl font-bold tracking-tight">People</h2>
