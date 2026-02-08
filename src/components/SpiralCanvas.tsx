@@ -71,15 +71,20 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
 }
 
 // Helper to get positions based on layout
-function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder') {
+function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
+    const isMobile = viewport.width < 768; // Simple breakpoint check
+
     return photos.map((photo, index) => {
         let pos: [number, number, number] = [0, 0, 0];
         let rot: [number, number, number] = [0, 0, 0];
 
         if (layout === 'spiral') {
-            const angle = index * 0.4;
-            const y = index * 0.5 - (photos.length * 0.25); // Center vertically
-            const r = 8 + (index * 0.1);
+            const spacing = isMobile ? 0.6 : 0.4;
+            const angle = index * spacing;
+            const yOffset = isMobile ? 0.3 : 0.5;
+            const y = index * yOffset - (photos.length * (yOffset / 2)); // Center vertically
+            const radiusBase = isMobile ? 5 : 8;
+            const r = radiusBase + (index * (isMobile ? 0.05 : 0.1));
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
         }
@@ -87,7 +92,7 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
             // Fibonacci Sphere
             const phi = Math.acos(-1 + (2 * index) / Math.max(1, photos.length - 1));
             const theta = Math.sqrt(photos.length * Math.PI) * phi;
-            const r = 25; // Radius
+            const r = isMobile ? 15 : 25; // Radius
 
             pos = [
                 r * Math.cos(theta) * Math.sin(phi),
@@ -105,16 +110,16 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
             rot = [euler.x, euler.y, euler.z];
         }
         else if (layout === 'grid') {
-            const cols = Math.ceil(Math.sqrt(photos.length));
-            const spacing = 2.5;
+            const cols = isMobile ? 2 : Math.ceil(Math.sqrt(photos.length));
+            const spacing = isMobile ? 2.0 : 2.5;
             const x = (index % cols) * spacing - (cols * spacing) / 2;
             const y = Math.floor(index / cols) * spacing - (Math.ceil(photos.length / cols) * spacing) / 2;
             pos = [x, y, 0];
             rot = [0, 0, 0];
         }
         else if (layout === 'wave') {
-            const cols = 8;
-            const spacing = 3;
+            const cols = isMobile ? 4 : 8;
+            const spacing = isMobile ? 2 : 3;
             const x = (index % cols) * spacing - (cols * spacing) / 2;
             const z = Math.floor(index / cols) * spacing - 10;
             const y = Math.sin(x * 0.3) * 3 + Math.cos(z * 0.2) * 2;
@@ -122,19 +127,19 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
             rot = [0, 0, 0];
         }
         else if (layout === 'helix') {
-            const angle = index * 0.6;
-            const y = index * 0.8 - (photos.length * 0.4);
-            const r = 12;
+            const angle = index * (isMobile ? 0.8 : 0.6);
+            const y = index * (isMobile ? 0.6 : 0.8) - (photos.length * 0.4);
+            const r = isMobile ? 8 : 12;
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2, 0];
         }
         else if (layout === 'cylinder') {
-            const rows = Math.ceil(photos.length / 12);
+            const rows = Math.ceil(photos.length / (isMobile ? 6 : 12));
             const photosPerRow = Math.ceil(photos.length / rows);
             const row = Math.floor(index / photosPerRow);
             const col = index % photosPerRow;
             const angle = (col / photosPerRow) * Math.PI * 2;
-            const r = 15;
+            const r = isMobile ? 8 : 15;
             const y = row * 3 - (rows * 1.5);
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
@@ -145,15 +150,15 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
 }
 
 function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder' }) {
-    const { camera } = useThree();
+    const { camera, viewport } = useThree();
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
     // Smooth layout transitions could be added here with spring, but direct switch for now
-    const layoutItems = useMemo(() => getLayoutPositions(photos, layoutMode), [photos, layoutMode]);
+    const layoutItems = useMemo(() => getLayoutPositions(photos, layoutMode, { width: viewport.width, height: viewport.height }), [photos, layoutMode, viewport]);
 
     return (
         <>
-            <OrbitControls enableDamping dampingFactor={0.05} autoRotate={layoutMode === 'spiral' || layoutMode === 'sphere'} autoRotateSpeed={0.5} />
+            <OrbitControls enableDamping dampingFactor={0.05} autoRotate={true} autoRotateSpeed={0.5} />
 
             <group>
                 {layoutItems.map((item) => (

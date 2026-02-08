@@ -69,7 +69,7 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
 
         // Detect faces with landmarks and descriptors
         const detections = await faceapi
-            .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions())
+            .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.4 }))
             .withFaceLandmarks()
             .withFaceDescriptors();
 
