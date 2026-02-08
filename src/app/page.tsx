@@ -10,6 +10,7 @@ import { Grid, Users, Plus } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails } from '@/lib/face-processing';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import '@/lib/debug-face-detection'; // Load debug utility
 
 const exampleImages = [
@@ -218,53 +219,42 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* Right: macOS-style Navigation */}
+          {/* Right Controls - Mobile Friendly */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="pointer-events-auto flex items-center gap-3"
           >
-            {/* Segmented Control - macOS Style */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+            {/* Upload Button - Visible on both desktop and mobile top bar for convenience */}
+            <button
+              onClick={() => setShowUpload(!showUpload)}
+              className="h-10 w-10 md:w-auto md:px-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+            >
+              <Plus className="w-5 h-5 md:w-4 md:h-4" />
+              <span className="hidden md:inline text-sm font-medium">Add Photos</span>
+            </button>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
               <button
                 onClick={() => {
                   setFilterMode('all');
                   setSelectedPersonIds([]);
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${filterMode === 'all'
-                  ? 'bg-white/20 text-white shadow-lg'
-                  : 'text-white/60 hover:text-white/80'
-                  }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${filterMode === 'all' ? 'bg-white/20 text-white shadow-lg' : 'text-white/60 hover:text-white/80'}`}
               >
                 <Grid className="w-4 h-4" />
-                <span className="hidden md:inline">All Photos</span>
+                <span>All Photos</span>
               </button>
               <button
                 onClick={() => setFilterMode('people')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${filterMode === 'people'
-                  ? 'bg-white/20 text-white shadow-lg'
-                  : 'text-white/60 hover:text-white/80'
-                  }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${filterMode === 'people' ? 'bg-white/20 text-white shadow-lg' : 'text-white/60 hover:text-white/80'}`}
               >
                 <Users className="w-4 h-4" />
-                <span className="hidden md:inline">People</span>
-                {people.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-white/20">
-                    {people.length}
-                  </span>
-                )}
+                <span>People</span>
               </button>
             </div>
-
-            {/* Upload Button - iOS Style */}
-            <button
-              onClick={() => setShowUpload(!showUpload)}
-              className="h-10 px-4 rounded-xl bg-gradient-to-b from-white/15 to-white/5 hover:from-white/20 hover:to-white/10 border border-white/20 text-white transition-all duration-200 flex items-center gap-2 backdrop-blur-md shadow-lg hover:shadow-xl"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden md:inline text-sm font-medium">Add Photos</span>
-            </button>
           </motion.div>
         </div>
       </div>
@@ -331,6 +321,17 @@ export default function Home() {
           </div>
         </motion.div>
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        filterMode={filterMode}
+        onFilterChange={(mode) => {
+          setFilterMode(mode);
+          if (mode === 'all') setSelectedPersonIds([]);
+        }}
+        onSettingsClick={() => setShowUpload(true)} // Or dedicated settings modal if needed
+        onLayoutClick={() => { }} // Could trigger layout change
+      />
 
     </main>
   );

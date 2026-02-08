@@ -56,20 +56,19 @@ export const useMousePositionRef = (
         };
 
         const handleDeviceOrientation = (ev: DeviceOrientationEvent) => {
-            console.log('[Tilt] Device orientation event:', { gamma: ev.gamma, beta: ev.beta });
-            // Map device tilt (gamma/beta) to screen coordinates
-            // Gamma: left-to-right tilt (-90 to 90)
-            // Beta: front-to-back tilt (-180 to 180)
+            if (ev.gamma === null || ev.beta === null) return;
 
-            // Map gamma (-45 to 45) to screen width (0 to window.innerWidth)
-            const gamma = Math.min(Math.max((ev.gamma || 0), -45), 45);
-            const x = ((gamma + 45) / 90) * window.innerWidth;
+            // Sensitivity multiplier for mobile tilt
+            const sensitivity = 2.0;
 
-            // Map beta (-45 to 45, relative to holding position) to screen height
-            // Assuming simplified holding position around 45 degrees
-            const betaRaw = (ev.beta || 0) - 45; // Center around 45 degrees tilt
-            const beta = Math.min(Math.max(betaRaw, -45), 45);
-            const y = ((beta + 45) / 90) * window.innerHeight;
+            // Map gamma (-30 to 30) to screen width centering
+            const gamma = Math.min(Math.max(ev.gamma, -30), 30);
+            const x = (window.innerWidth / 2) + (gamma * (window.innerWidth / 60) * sensitivity);
+
+            // Map beta (centered around 45 degrees holding position)
+            const betaRaw = ev.beta - 45;
+            const beta = Math.min(Math.max(betaRaw, -30), 30);
+            const y = (window.innerHeight / 2) + (beta * (window.innerHeight / 60) * sensitivity);
 
             updatePosition(x, y);
         };
