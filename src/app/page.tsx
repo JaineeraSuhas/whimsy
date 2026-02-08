@@ -149,7 +149,7 @@ export default function Home() {
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [showPeopleModal, setShowPeopleModal] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
+  const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('spiral');
 
   const fetchPhotos = async () => {
     setLoading(true);
@@ -354,7 +354,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 w-full max-w-xs p-6">
-              {['spiral', 'sphere', 'grid', 'wave', 'helix', 'cylinder'].map((m) => (
+              {['spiral', 'sphere', 'particles', 'wave', 'helix', 'cylinder'].map((m) => (
                 <button
                   key={m}
                   onClick={() => setLayoutMode(m as any)}
@@ -363,7 +363,7 @@ export default function Home() {
                   <span className="text-base">
                     {m === 'spiral' && '🌀'}
                     {m === 'sphere' && '🌐'}
-                    {m === 'grid' && '🔲'}
+                    {m === 'particles' && '✨'}
                     {m === 'wave' && '〰️'}
                     {m === 'helix' && '🧬'}
                     {m === 'cylinder' && '🥫'}
