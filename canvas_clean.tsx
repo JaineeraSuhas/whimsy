@@ -9,64 +9,43 @@ import { getAllPhotos, Photo, clearAllPhotos } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, LayoutGrid, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
-// Staggered loading helper to avoid overwhelming mobile Safari
-const loadQueue: string[] = [];
-let isProcessingQueue = false;
-
-function PhotoMesh({ photo, position, rotation, onClick, index }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number }) {
+function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(null);
     const [hovered, setHovered] = useState(false);
     const { gl } = useThree();
 
     useEffect(() => {
-        let isCancelled = false;
+        const url = URL.createObjectURL(photo.thumbnail);
+        const loader = new THREE.TextureLoader();
 
-        // Small stagger based on index helps mobile browsers prioritize resources
-        const staggerDelay = Math.min(index * 20, 2000);
-
-        const timer = setTimeout(() => {
-            if (isCancelled) return;
-
-            const url = URL.createObjectURL(photo.thumbnail);
-            const loader = new THREE.TextureLoader();
-
-            loader.load(
-                url,
-                (tex) => {
-                    if (isCancelled) {
-                        tex.dispose();
-                        URL.revokeObjectURL(url);
-                        return;
-                    }
-
-                    // DESKTOP PARITY: High quality settings
-                    const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
-                    tex.anisotropy = Math.min(maxAnisotropy, 16);
-                    tex.minFilter = THREE.LinearMipmapLinearFilter;
-                    tex.magFilter = THREE.LinearFilter;
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                    tex.generateMipmaps = true;
-                    tex.needsUpdate = true;
-
-                    setTexture(tex);
-                    URL.revokeObjectURL(url);
-                },
-                undefined,
-                (err) => {
-                    console.error(`Error loading texture ${photo.id}:`, err);
-                    URL.revokeObjectURL(url);
-                }
-            );
-        }, staggerDelay);
+        loader.load(
+            url,
+            (tex) => {
+                // Mobile-compatible texture settings
+                const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                tex.anisotropy = Math.min(maxAnisotropy, 4); // Limit for mobile performance
+                tex.minFilter = THREE.LinearFilter; // Simpler filter for mobile
+                tex.magFilter = THREE.LinearFilter;
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.generateMipmaps = false; // Disable mipmaps for better mobile compatibility
+                tex.needsUpdate = true;
+                setTexture(tex);
+                URL.revokeObjectURL(url);
+            },
+            undefined,
+            (error) => {
+                console.error('Error loading texture:', error);
+                URL.revokeObjectURL(url);
+            }
+        );
 
         return () => {
-            isCancelled = true;
-            clearTimeout(timer);
-            // We consciously do NOT dispose texture here to avoid white-flashes on re-renders,
-            // relying on the parent unmount or browser GC for major cleanup.
+            if (texture) {
+                texture.dispose();
+            }
         };
-    }, [photo.id, gl]);
+    }, [photo, gl]);
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -184,7 +163,7 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'grid
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
         }
 
-        return { photo, position: pos, rotation: rot, index };
+        return { photo, position: pos, rotation: rot };
     });
 }
 
@@ -238,17 +217,8 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spi
 //         setTexture(tex);
 //         ...
 
-interface SpiralCanvasProps {
-    photos: Photo[];
-    externalLayoutMode?: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder';
-    onLayoutChange?: (mode: 'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder') => void;
-}
-
-export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChange }: SpiralCanvasProps) {
-    const [internalLayoutMode, setInternalLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
-    const layoutMode = externalLayoutMode || internalLayoutMode;
-    const setLayoutMode = onLayoutChange || setInternalLayoutMode;
-
+export default function SpiralCanvas({ photos }: { photos: Photo[] }) {
+    const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'grid' | 'wave' | 'helix' | 'cylinder'>('spiral');
     const [showSettings, setShowSettings] = useState(false);
 
     const handleClearStorage = async () => {
