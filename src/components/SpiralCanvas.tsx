@@ -18,15 +18,33 @@ function PhotoMesh({ photo, position, rotation, onClick }: { photo: Photo, posit
     useEffect(() => {
         const url = URL.createObjectURL(photo.thumbnail);
         const loader = new THREE.TextureLoader();
-        loader.load(url, (tex) => {
-            tex.anisotropy = gl.capabilities.getMaxAnisotropy();
-            tex.minFilter = THREE.LinearMipMapLinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-            tex.colorSpace = THREE.SRGBColorSpace;
-            tex.generateMipmaps = true;
-            setTexture(tex);
-            URL.revokeObjectURL(url);
-        });
+
+        loader.load(
+            url,
+            (tex) => {
+                // Mobile-compatible texture settings
+                const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+                tex.anisotropy = Math.min(maxAnisotropy, 4); // Limit for mobile performance
+                tex.minFilter = THREE.LinearFilter; // Simpler filter for mobile
+                tex.magFilter = THREE.LinearFilter;
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.generateMipmaps = false; // Disable mipmaps for better mobile compatibility
+                tex.needsUpdate = true;
+                setTexture(tex);
+                URL.revokeObjectURL(url);
+            },
+            undefined,
+            (error) => {
+                console.error('Error loading texture:', error);
+                URL.revokeObjectURL(url);
+            }
+        );
+
+        return () => {
+            if (texture) {
+                texture.dispose();
+            }
+        };
     }, [photo, gl]);
 
     useFrame((state) => {

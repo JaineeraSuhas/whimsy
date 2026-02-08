@@ -11,17 +11,23 @@ export const useMousePositionRef = (
     const [permissionGranted, setPermissionGranted] = useState(false);
 
     const requestAccess = async () => {
+        console.log('[Tilt] Requesting device orientation permission...');
         if (typeof (DeviceOrientationEvent as unknown as DeviceOrientationEventiOS).requestPermission === 'function') {
             try {
                 const permissionState = await (DeviceOrientationEvent as unknown as DeviceOrientationEventiOS).requestPermission!();
+                console.log('[Tilt] Permission state:', permissionState);
                 if (permissionState === 'granted') {
                     setPermissionGranted(true);
+                    console.log('[Tilt] Permission granted');
+                } else {
+                    console.warn('[Tilt] Permission denied');
                 }
             } catch (e) {
-                console.error("Error requesting device orientation permission", e);
+                console.error("[Tilt] Error requesting device orientation permission", e);
             }
         } else {
             // Non-iOS or older devices usually don't need permission
+            console.log('[Tilt] No permission needed (non-iOS device)');
             setPermissionGranted(true);
         }
     };
@@ -50,6 +56,7 @@ export const useMousePositionRef = (
         };
 
         const handleDeviceOrientation = (ev: DeviceOrientationEvent) => {
+            console.log('[Tilt] Device orientation event:', { gamma: ev.gamma, beta: ev.beta });
             // Map device tilt (gamma/beta) to screen coordinates
             // Gamma: left-to-right tilt (-90 to 90)
             // Beta: front-to-back tilt (-180 to 180)
@@ -72,6 +79,7 @@ export const useMousePositionRef = (
         window.addEventListener("touchmove", handleTouchMove, { passive: false });
 
         if (permissionGranted) {
+            console.log('[Tilt] Attaching deviceorientation listener');
             window.addEventListener("deviceorientation", handleDeviceOrientation);
         }
 

@@ -193,12 +193,12 @@ export default function Home() {
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
 
       {/* 3D Spiral Canvas */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-10">
         <SpiralCanvas photos={filteredPhotos} />
       </div>
 
       {/* UI Overlay - Top Bar */}
-      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
         <div className="flex justify-between items-center p-6 md:p-8">
           {/* Left: Logo and Photo Count */}
           <motion.div
@@ -276,23 +276,27 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.4 }}
-          className="absolute bottom-24 right-8 z-10 pointer-events-auto"
+          className="absolute md:bottom-24 md:right-8 bottom-0 left-0 right-0 md:left-auto z-30 pointer-events-auto flex items-center justify-center md:block"
         >
-          <RadialFaceSelector
-            people={people}
-            selectedPersonIds={selectedPersonIds}
-            onSelectPerson={(id) => {
-              setSelectedPersonIds(prev =>
-                prev.includes(id)
-                  ? prev.filter(p => p !== id)
-                  : [...prev, id]
-              );
-            }}
-            onUpdateName={async (id, name) => {
-              await updatePersonName(id, name);
-              await fetchPhotos();
-            }}
-          />
+          {/* Mobile backdrop */}
+          <div className="md:hidden absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPersonIds([])} />
+          <div className="relative z-10 md:p-0 p-8 flex items-center justify-center">
+            <RadialFaceSelector
+              people={people}
+              selectedPersonIds={selectedPersonIds}
+              onSelectPerson={(id) => {
+                setSelectedPersonIds(prev =>
+                  prev.includes(id)
+                    ? prev.filter(p => p !== id)
+                    : [...prev, id]
+                );
+              }}
+              onUpdateName={async (id, name) => {
+                await updatePersonName(id, name);
+                await fetchPhotos();
+              }}
+            />
+          </div>
         </motion.div>
       )}
 
