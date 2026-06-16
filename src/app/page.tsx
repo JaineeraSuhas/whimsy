@@ -284,7 +284,9 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Desktop HUD / Controls Overlay - Left side, hidden on mobile */}
+      {photos.length > 0 && (
+        <>
+          {/* Desktop HUD / Controls Overlay - Left side, hidden on mobile */}
       <div className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-40 flex-col gap-4 pointer-events-none">
         <div className="pointer-events-auto">
           <CircleMenu
@@ -597,6 +599,8 @@ export default function Home() {
         }}
         onLayoutClick={() => { }}
       />
+        </>
+      )}
 
     </main>
   );
