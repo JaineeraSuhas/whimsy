@@ -8,7 +8,7 @@ export interface PhotoMetadata {
     width: number;
     height: number;
     mimeType: string;
-    exif?: Record<string, any>;
+    exif?: Record<string, unknown>;
     embedding?: number[]; // For AI features later
 }
 

@@ -7,7 +7,6 @@ import { v4 as uuidv4 } from 'uuid';
 import EXIF from 'exif-js';
 import { savePhoto, Photo } from '@/lib/db';
 import { processFacesInPhoto } from '@/lib/face-processing';
-import { loadFaceDetectionModel } from '@/lib/face-detection';
 
 export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => void }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -20,16 +19,21 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
                 // 1. Extract EXIF
                 let date = file.lastModified;
                 // Basic EXIF extraction (could be enhanced)
-                // @ts-ignore
-                EXIF.getData(file as any, function () {
-                    // @ts-ignore
-                    const exifDate = EXIF.getTag(this, "DateTimeOriginal");
+                // @ts-expect-error - EXIF typings do not include File
+                EXIF.getData(file as unknown as HTMLImageElement, function (this: HTMLImageElement) {
+                    const exifDate = EXIF.getTag(this, "DateTimeOriginal") as string | undefined;
                     if (exifDate) {
                         try {
                             const [datePart, timePart] = exifDate.split(" ");
                             const [year, month, day] = datePart.split(":");
                             const [hour, minute, second] = timePart.split(":");
-                            date = new Date(year, month - 1, day, hour, minute, second).getTime();
+                            const y = parseInt(year, 10);
+                            const m = parseInt(month, 10);
+                            const d = parseInt(day, 10);
+                            const hr = parseInt(hour, 10);
+                            const min = parseInt(minute, 10);
+                            const sec = parseInt(second, 10);
+                            date = new Date(y, m - 1, d, hr, min, sec).getTime();
                         } catch (e) {
                             console.warn("Error parsing EXIF date", e);
                         }
@@ -186,8 +190,8 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
         <div
             {...getRootProps()}
             className={`
-        border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors
-        ${isDragActive ? 'border-accent-warm bg-accent-warm/10' : 'border-neutral-700 hover:border-neutral-500'}
+        border-2 border-dashed rounded-2xl py-8 px-6 text-center cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[140px]
+        ${isDragActive ? 'border-accent-warm bg-accent-warm/10' : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/[0.02]'}
         ${isProcessing ? 'pointer-events-none opacity-50' : ''}
       `}
         >

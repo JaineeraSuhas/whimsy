@@ -101,18 +101,18 @@ export function RadialFaceSelector({
         }, 250);
 
         // build sequence for orbit placement
-        const orbitPlacementSequence: AnimationSequence = [
-            ...arms.map((el): [Element, Record<string, any>, any] => [
+        const orbitPlacementSequence = [
+            ...arms.map((el) => [
                 el,
                 { rotate: angleOf(el) },
                 { ...transition, at: 0 },
             ]),
-            ...imgs.map((img): [Element, Record<string, any>, any] => [
+            ...imgs.map((img) => [
                 img,
                 { rotate: -angleOf(armOfImg(img)!), opacity: 1 },
                 { ...transition, at: 0 },
             ]),
-        ];
+        ] as unknown as AnimationSequence;
 
         // play placement sequence
         delay(() => animate(orbitPlacementSequence), 700);
@@ -140,7 +140,7 @@ export function RadialFaceSelector({
         }, 1300);
 
         return () => stops.forEach((stop) => stop());
-    }, [people.length, animate]);
+    }, [people.length, animate, scope]);
 
     if (people.length === 0) {
         return (

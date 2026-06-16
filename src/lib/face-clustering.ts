@@ -47,7 +47,7 @@ function calculateWeightedDistance(face1: FaceDetection, face2: FaceDetection): 
     let landmarkDist = 0;
     if (face1.landmarks && face2.landmarks) {
         try {
-            const getProp = (lm: any) => {
+            const getProp = (lm: { positions: { x: number; y: number }[] }) => {
                 const pos = lm.positions;
                 const eyeDist = Math.sqrt(Math.pow(pos[36].x - pos[45].x, 2) + Math.pow(pos[36].y - pos[45].y, 2));
                 const eyeToNose = Math.sqrt(Math.pow((pos[36].x + pos[45].x) / 2 - pos[30].x, 2) + Math.pow((pos[36].y + pos[45].y) / 2 - pos[30].y, 2));
@@ -304,7 +304,7 @@ export function assignFaceToCluster(
     for (const cluster of clusters) {
         let totalDist = 0;
         for (const anchor of cluster.anchors) {
-            totalDist += calculateWeightedDistance(face, { descriptor: anchor } as any);
+            totalDist += calculateWeightedDistance(face, { descriptor: anchor } as unknown as FaceDetection);
         }
         const avgDist = totalDist / cluster.anchors.length;
 

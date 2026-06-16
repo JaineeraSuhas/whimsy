@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "canvas_clean.tsx",
+    "canvas_v2.tsx",
+    "working_canvas.tsx",
   ]),
 ]);
 

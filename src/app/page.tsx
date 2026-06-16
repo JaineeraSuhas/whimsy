@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, stagger, useAnimate, AnimatePresence } from "motion/react";
 import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
@@ -11,6 +12,7 @@ import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails } from '@/lib/face-processing';
 import MobileBottomNav from '@/components/MobileBottomNav';
+
 
 
 const exampleImages = [
@@ -27,6 +29,7 @@ const exampleImages = [
 ];
 
 import type { FloatingHandle } from '@/components/ui/parallax-floating';
+import { StandText } from '@/components/ui/StandText';
 
 const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
   const [scope, animate] = useAnimate();
@@ -54,9 +57,9 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.88, delay: 1.5 }}
       >
-        <p className="text-5xl md:text-7xl z-50 text-white font-bold italic tracking-tight">
-          whimsy.
-        </p>
+        <div className="text-5xl md:text-7xl z-50 text-white font-bold italic tracking-tight">
+          <StandText text="whimsy." />
+        </div>
         <p
           onClick={handleEnter}
           className="text-xs z-50 hover:scale-110 transition-transform bg-white text-black rounded-full py-2 px-6 cursor-pointer font-medium"
@@ -151,7 +154,7 @@ export default function Home() {
   const [showPeopleModal, setShowPeopleModal] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('spiral');
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = useCallback(async () => {
     setLoading(true);
     const storedPhotos = await getAllPhotos();
     setPhotos(storedPhotos);
@@ -162,7 +165,7 @@ export default function Home() {
     setPeople(detectedPeople);
 
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     const applyFilters = async () => {
@@ -187,7 +190,22 @@ export default function Home() {
   }, [filterMode, photos, selectedPersonIds, people.length]);
 
   useEffect(() => {
-    fetchPhotos();
+    let active = true;
+    const load = async () => {
+      const storedPhotos = await getAllPhotos();
+      if (!active) return;
+      setPhotos(storedPhotos);
+      setFilteredPhotos(storedPhotos);
+
+      const detectedPeople = await getPeopleWithThumbnails();
+      if (!active) return;
+      setPeople(detectedPeople);
+      setLoading(false);
+    };
+    load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleLibraryClick = () => {
@@ -213,7 +231,7 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
 
-      {/* 3D Spiral Canvas - Lower z-index to stay below UI */}
+      {/* Main 3D View — Spiral layouts */}
       <div className="absolute inset-0 z-0">
         <SpiralCanvas photos={filteredPhotos} externalLayoutMode={layoutMode} onLayoutChange={setLayoutMode} onClearPhotos={handleClearStorage} />
       </div>
@@ -357,7 +375,7 @@ export default function Home() {
               {['spiral', 'sphere', 'particles', 'wave', 'helix', 'cylinder'].map((m) => (
                 <button
                   key={m}
-                  onClick={() => setLayoutMode(m as any)}
+                  onClick={() => setLayoutMode(m as typeof layoutMode)}
                   className={`py-6 rounded-3xl text-[10px] uppercase font-black tracking-widest border transition-all flex flex-col items-center justify-center gap-3 ${layoutMode === m ? 'bg-white text-black border-white shadow-xl scale-105' : 'bg-white/5 text-white/40 border-white/10'}`}
                 >
                   <span className="text-base">
@@ -431,7 +449,7 @@ export default function Home() {
               <Plus className="w-6 h-6 rotate-45" />
             </button>
 
-            <div className="w-full max-w-4xl px-6">
+            <div className="w-full h-full">
               <UploadSection
                 onUploadComplete={() => {
                   fetchPhotos();

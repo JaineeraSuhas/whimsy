@@ -149,7 +149,7 @@ function SpiralPath({ positions }: { positions: SpiralPosition[] }) {
     if (!geometry) return null;
 
     return (
-        <mesh geometry={geometry as any}>
+        <mesh geometry={geometry as THREE.BufferGeometry}>
             <meshStandardMaterial
                 color="#FF6B35"
                 transparent
@@ -229,20 +229,8 @@ function SpiralScene({ images, onImageClick }: {
     images: ImageData[];
     onImageClick?: (image: ImageData) => void;
 }) {
-    const { camera } = useThree();
-
     const config = useMemo(() => getOptimalSpiralConfig(images.length), [images.length]);
     const positions = useMemo(() => generateSpiralPositions(images.length, config), [images.length, config]);
-    const cameraPosition = useMemo(() => getCameraPositionForSpiral(config), [config]);
-
-    // Auto-rotate camera slowly
-    useFrame(({ clock }) => {
-        const angle = clock.getElapsedTime() * 0.05;
-        // Don't override controls if user is interacting, but here we just add subtle movement
-        // Doing full override conflicts with OrbitControls. 
-        // Instead, let's just use OrbitControls fully or a custom camera rig.
-        // For now, we will disable auto-rotate to allow user control.
-    });
 
     return (
         <>

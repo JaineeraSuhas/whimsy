@@ -8,6 +8,20 @@ import { getAllPhotos, Photo } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, Sparkles, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 
+const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+};
+
+const getHashCode = (str: string): number => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+};
+
 // 1. Precise Global Cache to persist textures across re-renders
 class GlobalTextureCache {
     private static cache = new Map<string, THREE.Texture>();
@@ -66,8 +80,7 @@ class TextureLoaderSystem {
                     };
 
                     // Race load against timeout
-                    // @ts-ignore
-                    tex = await Promise.race([attemptLoad(), timeoutPromise]);
+                    tex = (await Promise.race([attemptLoad(), timeoutPromise])) as THREE.Texture;
 
                     if (tex) {
                         tex.anisotropy = Math.min(maxAnisotropy, 4);
@@ -115,9 +128,10 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
     const [hovered, setHovered] = useState(false);
     const { gl, camera } = useThree();
 
-    // Random drift parameters for particles
-    const driftSpeed = useMemo(() => Math.random() * 0.2 + 0.1, []);
-    const driftOffset = useMemo(() => Math.random() * Math.PI * 2, []);
+    // Deterministic drift parameters for particles
+    const seed = useMemo(() => getHashCode(photo.id), [photo.id]);
+    const driftSpeed = useMemo(() => seededRandom(seed) * 0.2 + 0.1, [seed]);
+    const driftOffset = useMemo(() => seededRandom(seed + 1) * Math.PI * 2, [seed]);
 
     useEffect(() => {
         if (texture) return;
@@ -125,8 +139,12 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
         let isCancelled = false;
         const url = URL.createObjectURL(photo.thumbnail);
 
-        setIsLoading(true);
-        setHasError(false);
+        // Defer to prevent calling state updates synchronously in effect body
+        Promise.resolve().then(() => {
+            if (isCancelled) return;
+            setIsLoading(true);
+            setHasError(false);
+        });
 
         TextureLoaderSystem.load(photo.id, url, gl)
             .then(tex => {
@@ -151,7 +169,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
             isCancelled = true;
             // No disposal here; persistent cache handles it
         };
-    }, [photo.id, gl]);
+    }, [photo.id, photo.thumbnail, texture, gl]);
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -238,14 +256,10 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
 }
 
 // Helper to get positions based on layout
-function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
+function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
     const isMobile = viewport.width < 768; // Simple breakpoint check
 
-    // Deterministic random generator for consistent particle positions per photo
-    const seededRandom = (seed: number) => {
-        const x = Math.sin(seed++) * 10000;
-        return x - Math.floor(x);
-    };
+    // Using global seededRandom helper for consistent particle positions per photo
 
     return photos.map((photo, index) => {
         let pos: [number, number, number] = [0, 0, 0];
@@ -327,7 +341,7 @@ function getLayoutPositions(photos: Photo[], layout: 'spiral' | 'sphere' | 'part
     });
 }
 
-function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder' }) {
+function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder' }) {
     const { camera, viewport } = useThree();
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 

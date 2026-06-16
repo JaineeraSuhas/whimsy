@@ -19,24 +19,18 @@ interface NavBarProps {
 }
 
 export function NavBar({ items, className, activeItem }: NavBarProps) {
-    const [activeTab, setActiveTab] = useState(activeItem || items[0]?.name)
-    const [isMobile, setIsMobile] = useState(false)
+    const [activeTabState, setActiveTabState] = useState(activeItem || items[0]?.name)
+    const activeTab = activeItem !== undefined ? activeItem : activeTabState
+    const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" ? window.innerWidth < 768 : false)
 
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768)
         }
 
-        handleResize()
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
     }, [])
-
-    useEffect(() => {
-        if (activeItem) {
-            setActiveTab(activeItem)
-        }
-    }, [activeItem])
 
     return (
         <div
@@ -53,7 +47,7 @@ export function NavBar({ items, className, activeItem }: NavBarProps) {
                     <button
                         key={item.name}
                         onClick={() => {
-                            setActiveTab(item.name)
+                            setActiveTabState(item.name)
                             item.onClick?.()
                         }}
                         className={cn(

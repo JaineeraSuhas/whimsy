@@ -1,4 +1,4 @@
-import { detectFaces, extractFaceThumbnail } from './face-detection';
+import { detectFaces, extractFaceThumbnail, FaceDetection } from './face-detection';
 import { clusterFaces, assignFaceToCluster } from './face-clustering';
 import {
     Photo,
@@ -95,7 +95,7 @@ export async function updatePeopleClusters(): Promise<void> {
         const allPhotos = await getAllPhotos();
 
         // Collect all faces from all photos
-        const facesMap = new Map<string, any[]>();
+        const facesMap = new Map<string, FaceDetection[]>();
         let totalFaces = 0;
 
         for (const photo of allPhotos) {
@@ -156,7 +156,7 @@ export async function updatePeopleClusters(): Promise<void> {
 
             // Find representative face thumbnail
             let thumbnailBlob: Blob | null = null;
-            let faceBox: any = null;
+            let faceBox: { x: number; y: number; width: number; height: number } | null = null;
             let sourcePhoto: Photo | null = null;
 
             for (const photo of allPhotos) {

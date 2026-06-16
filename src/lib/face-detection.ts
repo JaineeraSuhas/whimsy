@@ -11,7 +11,7 @@ export interface FaceDetection {
         height: number;
     };
     descriptor: Float32Array; // face-api.js descriptor (128 dimensions)
-    landmarks?: any;
+    landmarks?: { positions: { x: number; y: number }[] };
     score?: number; // Detection confidence score
     quality?: number; // Overall face quality score (0-1)
     skinTone?: { r: number; g: number; b: number }; // Average color of central face region
@@ -31,6 +31,7 @@ export async function loadFaceDetectionModel(): Promise<void> {
 
         // Add timeout to prevent hanging forever
         const loadPromise = Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
             faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
             faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
             faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
@@ -48,6 +49,52 @@ export async function loadFaceDetectionModel(): Promise<void> {
         console.error('[Face Detection] Failed to load models:', error);
         throw error;
     }
+}
+
+/**
+ * Downscale image if it exceeds maxDimension, returning the scaled image/canvas, scale factor, and original dimensions.
+ */
+async function getDownscaledImage(
+    img: HTMLImageElement,
+    maxDimension: number = 1024
+): Promise<{
+    scaledSource: HTMLImageElement | HTMLCanvasElement;
+    scaleFactor: number;
+    originalWidth: number;
+    originalHeight: number;
+}> {
+    const originalWidth = img.naturalWidth || img.width;
+    const originalHeight = img.naturalHeight || img.height;
+
+    if (originalWidth <= maxDimension && originalHeight <= maxDimension) {
+        return { scaledSource: img, scaleFactor: 1.0, originalWidth, originalHeight };
+    }
+
+    let width = originalWidth;
+    let height = originalHeight;
+    if (width > height) {
+        if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+        }
+    } else {
+        if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+        }
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return { scaledSource: img, scaleFactor: 1.0, originalWidth, originalHeight };
+    }
+
+    ctx.drawImage(img, 0, 0, width, height);
+    const scaleFactor = originalWidth / width;
+    return { scaledSource: canvas, scaleFactor, originalWidth, originalHeight };
 }
 
 /**
@@ -75,28 +122,72 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
             img = imageSource;
         }
 
-        console.log('[Face Detection] Detecting faces...');
+        console.log('[Face Detection] Checking image scale...');
+        const { scaledSource, scaleFactor } = await getDownscaledImage(img, 1024);
+        
+        console.log(`[Face Detection] Detecting faces (scaleFactor: ${scaleFactor.toFixed(2)})...`);
 
-        // Detect faces with landmarks and descriptors
-        const detectionPromise = faceapi
-            .detectAllFaces(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.4 }))
-            .withFaceLandmarks()
-            .withFaceDescriptors();
+        // Detect faces with landmarks and descriptors using SSD MobileNet V1 first
+        let detections: { detection: faceapi.FaceDetection; landmarks: faceapi.FaceLandmarks68; descriptor: Float32Array }[] = [];
+        let detectionError: Error | null = null;
 
-        // 10-second timeout for detection
-        const detections = await Promise.race([
-            detectionPromise,
-            new Promise<any[]>((_, reject) => setTimeout(() => reject(new Error('Detection timed out')), 10000))
-        ]);
+        try {
+            const detectionPromise = faceapi
+                .detectAllFaces(scaledSource, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 }))
+                .withFaceLandmarks()
+                .withFaceDescriptors();
+
+            // 15-second timeout for SSD detection
+            detections = await Promise.race([
+                detectionPromise,
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('SSD Detection timed out')), 15000))
+            ]);
+        } catch (err) {
+            console.warn('[Face Detection] SSD MobileNet detection failed/timed out, trying TinyFaceDetector fallback...', err);
+            detectionError = err as Error;
+        }
+
+        // Fallback to TinyFaceDetector if SSD failed or returned no faces
+        if (detections.length === 0) {
+            try {
+                const detectionPromise = faceapi
+                    .detectAllFaces(scaledSource, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptors();
+
+                detections = await Promise.race([
+                    detectionPromise,
+                    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('TinyFaceDetector timed out')), 10000))
+                ]);
+            } catch (fallbackErr) {
+                console.error('[Face Detection] Fallback TinyFaceDetector also failed:', fallbackErr);
+                throw detectionError || fallbackErr;
+            }
+        }
 
         console.log(`[Face Detection] Found ${detections.length} faces`);
 
-        // Convert to our format
+        // Convert to our format and rescale coordinates back to original size
         const faces: FaceDetection[] = detections.map((detection) => {
-            const box = detection.detection.box;
-            const landmarks = detection.landmarks;
+            const box = {
+                x: detection.detection.box.x * scaleFactor,
+                y: detection.detection.box.y * scaleFactor,
+                width: detection.detection.box.width * scaleFactor,
+                height: detection.detection.box.height * scaleFactor,
+            };
 
-            // Sample skin tone and compute quality metrics
+            const landmarks = detection.landmarks;
+            let scaledLandmarks = undefined;
+            if (landmarks) {
+                scaledLandmarks = {
+                    positions: landmarks.positions.map((pt) => ({
+                        x: pt.x * scaleFactor,
+                        y: pt.y * scaleFactor
+                    }))
+                };
+            }
+
+            // Sample skin tone and compute quality metrics on original image
             let skinTone = { r: 0, g: 0, b: 0 };
             let quality = 0;
 
@@ -107,7 +198,6 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                 const sampleCtx = sampleCanvas.getContext('2d');
 
                 if (sampleCtx) {
-                    // Draw face for analysis
                     sampleCtx.drawImage(
                         img,
                         box.x, box.y, box.width, box.height,
@@ -122,7 +212,6 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                     const centerEnd = 128 * 88 * 4;
 
                     for (let i = centerStart; i < centerEnd; i += 4) {
-                        // Simple center crop check (x bounds)
                         const x = (i / 4) % 128;
                         if (x > 40 && x < 88) {
                             r += data[i];
@@ -143,10 +232,8 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                     }
 
                     // 3. Calculate Sharpness Score (Laplacian variance approx)
-                    // We'll use a simple edge detection check as proxy
                     let edgeSum = 0;
                     for (let i = 0; i < data.length; i += 4) {
-                        // Compare with right neighbor (horizontal gradient)
                         if ((i / 4) % 128 < 127) {
                             const diff = Math.abs(data[i] - data[i + 4]);
                             edgeSum += diff;
@@ -155,17 +242,15 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                     const avgEdge = edgeSum / (128 * 128);
                     const sharpnessScore = Math.min(avgEdge / 20.0, 1.0); // Normalize
 
-                    // 4. Calculate Frontality & Symmetry (using landmarks)
+                    // 4. Calculate Frontality & Symmetry
                     let frontalityScore = 0.7;
                     let symmetryScore = 0.8;
 
-                    if (landmarks) {
-                        const positions = landmarks.positions;
+                    if (scaledLandmarks) {
+                        const positions = scaledLandmarks.positions;
                         const leftEye = positions[36];
                         const rightEye = positions[45];
                         const nose = positions[30];
-                        const leftMouth = positions[48];
-                        const rightMouth = positions[54];
 
                         // Frontality: Nose should be centered between eyes
                         const eyeDist = Math.sqrt(Math.pow(leftEye.x - rightEye.x, 2) + Math.pow(leftEye.y - rightEye.y, 2));
@@ -179,9 +264,6 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
                         symmetryScore = 1.0 - (Math.abs(leftDist - rightDist) / Math.max(leftDist, rightDist));
                     }
 
-                    // Total Quality Score (Weighted)
-                    // Weights: Sharpness 30%, Brightness 20%, Frontality 25%, Resolution 15%, Symmetry 10%
-                    // Resolution score is 1.0 since we scaled to standard, but original box matters
                     const resolutionScore = Math.min(box.width / 200, 1.0);
 
                     quality = (sharpnessScore * 0.30) +
@@ -196,16 +278,11 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
 
             return {
                 id: `face-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                box: {
-                    x: box.x,
-                    y: box.y,
-                    width: box.width,
-                    height: box.height,
-                },
-                descriptor: detection.descriptor as Float32Array,
-                landmarks: detection.landmarks,
-                score: detection.detection.score, // Base detection confidence
-                quality: quality || detection.detection.score, // Use computed quality or fallback
+                box,
+                descriptor: detection.descriptor,
+                landmarks: scaledLandmarks,
+                score: detection.detection.score,
+                quality: quality || detection.detection.score,
                 skinTone,
             };
         });
@@ -252,7 +329,6 @@ export async function extractFaceThumbnail(
         img.onload = () => {
             URL.revokeObjectURL(url);
 
-            // Add padding
             const paddingX = box.width * padding;
             const paddingY = box.height * padding;
 
@@ -261,7 +337,6 @@ export async function extractFaceThumbnail(
             const width = Math.min(img.width - x, box.width + paddingX * 2);
             const height = Math.min(img.height - y, box.height + paddingY * 2);
 
-            // Create canvas and extract face region
             const canvas = document.createElement('canvas');
             const size = 128; // Fixed size for thumbnails
             canvas.width = size;
@@ -273,7 +348,6 @@ export async function extractFaceThumbnail(
                 return;
             }
 
-            // Draw face region scaled to fixed size
             ctx.drawImage(img, x, y, width, height, 0, 0, size, size);
 
             canvas.toBlob(
