@@ -99,25 +99,16 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const W = dimensions.w;
     const H = dimensions.h;
 
-    // Enforce a large logical block (e.g., 4x4 tiles = 16 tiles) to completely hide repeating clone patterns
-    const minimumTiles = 16;
-    const minimumSlots = minimumTiles * REFERENCE_LAYOUT.length;
-    const slotsToFill = Math.max(photos.length, minimumSlots);
-    // Round up to the nearest full tile so the grid is always complete
-    const totalSlots = Math.ceil(slotsToFill / REFERENCE_LAYOUT.length) * REFERENCE_LAYOUT.length;
+    // User specifically requested NO artificial repetition. 
+    // If there aren't enough photos, they prefer empty blank space over seeing the same photos repeat.
+    const displayPhotos = [...photos];
 
-    const displayPhotos = [];
-    for (let i = 0; i < totalSlots; i++) {
-      displayPhotos.push(photos[i % photos.length]);
-    }
-
-    // Seeded pseudo-random shuffle to prevent adjacent identical photos
+    // Seeded pseudo-random shuffle to keep layout organic
     let seed = 12345;
     const random = () => {
       seed = (seed * 9301 + 49297) % 233280;
       return seed / 233280;
     };
-    
     for (let i = displayPhotos.length - 1; i > 0; i--) {
       const j = Math.floor(random() * (i + 1));
       [displayPhotos[i], displayPhotos[j]] = [displayPhotos[j], displayPhotos[i]];
@@ -125,10 +116,20 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
     const totalTiles = Math.max(1, Math.ceil(displayPhotos.length / REFERENCE_LAYOUT.length));
     const tileCols = Math.ceil(Math.sqrt(totalTiles));
+    const tileRows = Math.ceil(totalTiles / tileCols);
     
-    // Condense the layout to fit 9 images tightly on one screen with slight edge overlap
+    // Grid size for the populated tiles
     const tileW = Math.max(1000, W * 1.05);
     const tileH = Math.max(700, H * 1.05);
+
+    // Calculate actual grid bounds populated by photos
+    let contentW = tileCols * tileW;
+    let contentH = tileRows * tileH;
+
+    // Create the "blanks" by forcefully expanding the engine's wrapping boundary.
+    // If there's only 1 screen of photos, expanding bounds to 3x screen size guarantees 2 full screens of empty black space before the clone repeats.
+    contentW = Math.max(contentW, W * 3);
+    contentH = Math.max(contentH, H * 3);
 
     const computedCards = displayPhotos.map((photo, index) => {
       const patternIdx = index % REFERENCE_LAYOUT.length;
@@ -182,15 +183,10 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
         get imageUrl() { return urlMapRef.current.get(photo.id) || ''; },
       };
     });
-    // The layout grid max dimensions
-    const totalW = tileCols * tileW;
-    const tileRows = Math.ceil(totalTiles / tileCols);
-    const totalH = Math.max(tileRows * tileH, tileH);
-
     return {
       cards: computedCards,
-      totalW,
-      totalH,
+      totalW: contentW,
+      totalH: contentH,
     };
   }, [photos, dimensions, isMounted]);
 
