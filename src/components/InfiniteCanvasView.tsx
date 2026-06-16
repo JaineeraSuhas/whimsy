@@ -94,7 +94,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
   // Compute deterministic scattered layout for cards — matching the reference site style
   const layoutData = useMemo(() => {
-    if (!isMounted) return { cards: [], totalW: 0, totalH: 0 };
+    if (!isMounted || photos.length === 0) return { cards: [], totalW: 0, totalH: 0 };
 
     const W = dimensions.w;
     const H = dimensions.h;
