@@ -76,12 +76,12 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
         <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
         {/* Top Left */}
-        <FloatingElement depth={0.5} className="top-[5%] left-[-5%] md:top-[8%] md:left-[11%]">
+        <FloatingElement depth={0.5} className="top-[10%] left-[5%] md:top-[8%] md:left-[11%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 1"
-            className="w-20 h-20 md:w-24 md:h-24 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-20 md:h-24 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Hidden on Mobile - Top Mid */}
@@ -90,52 +90,52 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 2"
-            className="w-28 h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-28 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Top Right */}
-        <FloatingElement depth={2} className="top-[-5%] right-[-5%] md:top-[2%] md:left-[53%] md:right-auto">
+        <FloatingElement depth={2} className="top-[8%] right-[5%] md:top-[2%] md:left-[53%] md:right-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
             alt="Gallery 3"
-            className="w-24 h-32 md:w-40 md:h-52 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-28 md:h-52 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Middle Right */}
-        <FloatingElement depth={1} className="top-[35%] right-[-10%] md:top-[0%] md:left-[83%] md:right-auto">
+        <FloatingElement depth={1} className="top-[35%] right-[2%] md:top-[0%] md:left-[83%] md:right-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
             alt="Gallery 4"
-            className="w-20 h-20 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-20 md:h-32 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Middle Left */}
-        <FloatingElement depth={1.5} className="top-[45%] left-[-10%] md:top-[40%] md:left-[2%]">
+        <FloatingElement depth={1.5} className="top-[35%] left-[2%] md:top-[40%] md:left-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
             alt="Gallery 5"
-            className="w-24 h-24 md:w-36 md:h-36 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-24 md:h-36 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Bottom Right Corner */}
-        <FloatingElement depth={2} className="bottom-[5%] right-[5%] md:top-[70%] md:left-[77%] md:right-auto md:bottom-auto">
+        <FloatingElement depth={2} className="bottom-[12%] right-[10%] md:top-[70%] md:left-[77%] md:right-auto md:bottom-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
             alt="Gallery 6"
-            className="w-24 h-24 md:w-36 md:h-48 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-24 md:h-48 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Bottom Left Corner */}
-        <FloatingElement depth={3} className="bottom-[5%] left-[-5%] md:top-[73%] md:left-[15%] md:bottom-auto">
+        <FloatingElement depth={3} className="bottom-[10%] left-[10%] md:top-[73%] md:left-[15%] md:bottom-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
             alt="Gallery 7"
-            className="w-24 h-36 md:w-52 md:h-64 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-28 md:h-64 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         {/* Hidden on Mobile - Bottom Mid */}
@@ -144,7 +144,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
             alt="Gallery 8"
-            className="w-32 h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            className="w-auto h-32 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
