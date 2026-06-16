@@ -75,87 +75,94 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
       {/* Floating background images — absolutely positioned behind text */}
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
         <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
-        <FloatingElement depth={0.5} className="top-[8%] left-[2%] md:left-[8%]">
+        {/* Top Left */}
+        <FloatingElement depth={0.5} className="top-[5%] left-[-5%] md:top-[8%] md:left-[8%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 1"
-            className="w-36 h-36 md:w-24 md:h-24 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-20 h-20 md:w-24 md:h-24 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[2%] left-[45%] md:left-[35%] hidden md:block">
+        {/* Hidden on Mobile - Top Mid */}
+        <FloatingElement depth={1} className="hidden md:block md:top-[2%] md:left-[35%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 2"
-            className="w-48 h-48 md:w-28 md:h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-28 h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        <FloatingElement depth={2} className="top-[-2%] left-[75%] md:left-[65%]">
+        {/* Top Right */}
+        <FloatingElement depth={2} className="top-[-5%] right-[-5%] md:top-[-2%] md:left-auto md:right-[15%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
             alt="Gallery 3"
-            className="w-48 h-64 md:w-40 md:h-52 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-24 h-32 md:w-40 md:h-52 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[25%] left-[82%] md:left-[85%]">
+        {/* Middle Right */}
+        <FloatingElement depth={1} className="top-[35%] right-[-10%] md:top-[25%] md:left-auto md:right-[5%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
             alt="Gallery 4"
-            className="w-36 h-36 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-20 h-20 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-
-        <FloatingElement depth={1.5} className="top-[35%] left-[-8%] md:left-[2%]">
+        {/* Middle Left */}
+        <FloatingElement depth={1.5} className="top-[45%] left-[-10%] md:top-[35%] md:left-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
             alt="Gallery 5"
-            className="w-44 h-44 md:w-36 md:h-36 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-24 h-24 md:w-36 md:h-36 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        <FloatingElement depth={0.8} className="top-[55%] left-[85%] md:left-[88%]">
+        {/* Bottom Right High */}
+        <FloatingElement depth={0.8} className="bottom-[25%] right-[-5%] md:top-[55%] md:bottom-auto md:left-auto md:right-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 9"
-            className="w-36 h-36 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-20 h-20 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-
-        <FloatingElement depth={2} className="top-[75%] left-[72%] md:left-[80%]">
+        {/* Bottom Right Corner */}
+        <FloatingElement depth={2} className="bottom-[5%] right-[5%] md:top-[75%] md:bottom-auto md:left-auto md:right-[10%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
             alt="Gallery 6"
-            className="w-48 h-48 md:w-36 md:h-48 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-24 h-24 md:w-36 md:h-48 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-
-        <FloatingElement depth={3} className="top-[80%] left-[5%] md:left-[10%]">
+        {/* Bottom Left Corner */}
+        <FloatingElement depth={3} className="bottom-[5%] left-[-5%] md:top-[80%] md:bottom-auto md:left-[10%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
             alt="Gallery 7"
-            className="w-48 h-64 md:w-52 md:h-full object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-24 h-36 md:w-52 md:h-64 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[85%] left-[45%] md:left-[55%] hidden md:block">
+        {/* Hidden on Mobile - Bottom Mid */}
+        <FloatingElement depth={1} className="hidden md:block md:top-[85%] md:left-[55%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
             alt="Gallery 8"
-            className="w-48 h-48 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-32 h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        <FloatingElement depth={1.2} className="top-[82%] left-[35%] hidden md:block">
+        {/* Hidden on Mobile - Bottom Mid Left */}
+        <FloatingElement depth={1.2} className="hidden md:block md:top-[82%] md:left-[35%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 10"
-            className="w-40 h-40 md:w-28 md:h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-28 h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         </Floating>
