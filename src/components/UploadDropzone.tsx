@@ -8,12 +8,32 @@ import EXIF from 'exif-js';
 import { savePhoto, Photo } from '@/lib/db';
 import { processFacesInPhoto } from '@/lib/face-processing';
 
-export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?: () => void }) {
+export default function UploadDropzone({ 
+    onUploadComplete, 
+    mode = 'default', 
+    className, 
+    children,
+    onProcessingChange 
+}: { 
+    onUploadComplete?: () => void, 
+    mode?: 'default' | 'button', 
+    className?: string, 
+    children?: React.ReactNode,
+    onProcessingChange?: (isProcessing: boolean) => void 
+}) {
     const [isProcessing, setIsProcessing] = useState(false);
+    
+    // Helper to notify parent of processing state
+    const updateProcessingState = (state: boolean) => {
+        setIsProcessing(state);
+        onProcessingChange?.(state);
+    };
+
     const [progress, setProgress] = useState(0);
     const [statusMessage, setStatusMessage] = useState('');
 
     const processFile = async (file: File) => {
+        // ... (unchanged code) ...
         return new Promise<void>(async (resolve) => {
             try {
                 // 1. Extract EXIF
@@ -159,7 +179,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
     };
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
-        setIsProcessing(true);
+        updateProcessingState(true);
         setProgress(0);
 
         let processedCount = 0;
@@ -175,7 +195,7 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        setIsProcessing(false);
+        updateProcessingState(false);
         if (onUploadComplete) onUploadComplete();
     }, [onUploadComplete]);
 
@@ -185,6 +205,19 @@ export default function UploadDropzone({ onUploadComplete }: { onUploadComplete?
             'image/*': ['.heic', '.heif', '.png', '.jpg', '.jpeg', '.webp']
         }
     });
+
+    if (mode === 'button') {
+        return (
+            <div {...getRootProps()} className={`relative ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}>
+                <input {...getInputProps()} />
+                <button
+                    className={className || "bg-white text-black px-6 py-2 rounded-full text-xs font-bold shadow-xl hover:scale-105 active:scale-95 transition-all whitespace-nowrap"}
+                >
+                    {isProcessing ? `UPLOADING ${progress}%` : (children || 'ADD PHOTOS')}
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div

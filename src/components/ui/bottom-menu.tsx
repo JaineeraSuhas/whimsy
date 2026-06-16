@@ -77,9 +77,9 @@ export function MenuBar({ items, className, ...props }: MenuBarProps) {
         ref={menuRef}
         className={cn(
           "h-12 px-2 inline-flex justify-center items-center gap-[4px] overflow-hidden z-10",
-          "rounded-full bg-white/5 backdrop-blur-2xl",
-          "border border-white/20 text-white",
-          "shadow-2xl shadow-white/5"
+          "rounded-full bg-black/40 backdrop-blur-md",
+          "border border-white/10 text-white",
+          "shadow-2xl"
         )}
       >
         {items.map((item, index) => (

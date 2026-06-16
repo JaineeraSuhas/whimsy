@@ -56,17 +56,17 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
     >
       {/* Center content — always on top */}
       <motion.div
-        className="relative z-50 text-center flex flex-col items-center justify-center space-y-10"
+        className="relative z-50 text-center flex flex-col items-center justify-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.88, delay: 1.5 }}
       >
         <div className="relative z-0 text-5xl md:text-7xl text-white font-bold italic tracking-tight">
-          <StandText text="whimsy." />
+          <StandText text="whimsy" />
         </div>
         <button
           onClick={handleEnter}
-          className="relative z-10 flex items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-8 py-3 text-xs font-bold tracking-widest text-white transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 uppercase shadow-xl"
+          className="relative z-10 mt-32 md:mt-16 flex items-center justify-center overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-xl px-6 py-2.5 text-[10px] md:text-xs font-medium tracking-[0.2em] text-white/90 transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 uppercase shadow-[0_0_40px_rgba(255,255,255,0.1)]"
         >
           ENTER ARENA
         </button>
@@ -75,7 +75,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
       {/* Floating background images — absolutely positioned behind text */}
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
         <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
-        <FloatingElement depth={0.5} className="top-[8%] left-[11%]">
+        <FloatingElement depth={0.5} className="top-[8%] left-[8%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
@@ -83,7 +83,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-36 h-36 md:w-24 md:h-24 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[10%] left-[32%]">
+        <FloatingElement depth={1} className="top-[5%] left-[35%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
@@ -91,7 +91,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-48 h-48 md:w-28 md:h-28 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={2} className="top-[2%] left-[53%]">
+        <FloatingElement depth={2} className="top-[2%] left-[65%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
@@ -99,7 +99,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-64 h-80 md:w-40 md:h-52 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[0%] left-[83%]">
+        <FloatingElement depth={1} className="top-[0%] left-[85%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
@@ -108,7 +108,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
 
-        <FloatingElement depth={1} className="top-[40%] left-[2%]">
+        <FloatingElement depth={1.5} className="top-[45%] left-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
@@ -116,7 +116,16 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-52 h-52 md:w-36 md:h-36 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={2} className="top-[70%] left-[77%]">
+        <FloatingElement depth={0.8} className="top-[40%] left-[88%]">
+          <motion.img
+            initial={{ opacity: 0 }}
+            src={exampleImages[0]}
+            alt="Gallery 9"
+            className="w-44 h-44 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+          />
+        </FloatingElement>
+
+        <FloatingElement depth={2} className="top-[75%] left-[80%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
@@ -125,7 +134,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
 
-        <FloatingElement depth={4} className="top-[73%] left-[15%]">
+        <FloatingElement depth={3} className="top-[80%] left-[10%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
@@ -133,12 +142,20 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-72 h-80 md:w-52 md:h-full object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[80%] left-[50%]">
+        <FloatingElement depth={1} className="top-[85%] left-[55%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
             alt="Gallery 8"
             className="w-48 h-48 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+          />
+        </FloatingElement>
+        <FloatingElement depth={1.2} className="top-[82%] left-[35%]">
+          <motion.img
+            initial={{ opacity: 0 }}
+            src={exampleImages[1]}
+            alt="Gallery 10"
+            className="w-40 h-40 md:w-28 md:h-28 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         </Floating>
@@ -160,6 +177,7 @@ export default function Home() {
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [showPeopleModal, setShowPeopleModal] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'canvas' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('canvas');
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchPhotos = useCallback(async () => {
     setLoading(true);
@@ -203,6 +221,10 @@ export default function Home() {
       if (!active) return;
       setPhotos(storedPhotos);
       setFilteredPhotos(storedPhotos);
+
+      if (storedPhotos.length === 0) {
+          // If no photos exist, we show the app but it will automatically wait for the user to upload via the header button.
+      }
 
       const detectedPeople = await getPeopleWithThumbnails();
       if (!active) return;
@@ -252,7 +274,7 @@ export default function Home() {
             {layoutMode === 'canvas' ? (
               <InfiniteCanvasView photos={filteredPhotos} />
             ) : (
-              <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={showUpload || photos.length === 0} />
+              <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={false} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -362,13 +384,15 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="pointer-events-auto flex items-center gap-2"
           >
-            <button
-              onClick={() => { setShowUpload(true); setShowPeopleModal(false); setShowSettings(false); }}
+            <UploadDropzone
+              mode="button"
+              onUploadComplete={fetchPhotos}
+              onProcessingChange={setIsUploading}
               className="h-10 w-10 md:w-auto md:px-5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all flex items-center justify-center gap-2 backdrop-blur-xl shadow-2xl z-50"
             >
               <Plus className="w-5 h-5 md:w-4 md:h-4" />
               <span className="hidden md:inline text-sm font-semibold">Add Photos</span>
-            </button>
+            </UploadDropzone>
 
             {/* Desktop-only secondary filter */}
             <div className="hidden md:flex items-center gap-1 p-1 rounded-full bg-black/40 backdrop-blur-xl border border-white/5">
@@ -542,34 +566,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Upload Section - High z-index with explicit Close btn fix */}
-      <AnimatePresence>
-        {(photos.length === 0 || showUpload) && !loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/98 backdrop-blur-2xl z-[70] pointer-events-auto"
-          >
-            {/* Explicit Close Button on Top Level */}
-            <button
-              onClick={() => setShowUpload(false)}
-              className="fixed top-8 right-8 z-[80] p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all font-bold"
-            >
-              <Plus className="w-6 h-6 rotate-45" />
-            </button>
-
-            <div className="w-full h-full">
-              <UploadSection
-                onUploadComplete={() => {
-                  fetchPhotos();
-                  setShowUpload(false);
-                }}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Mobile Bottom Navigation - Higher z-index but below Modals */}
       <MobileBottomNav

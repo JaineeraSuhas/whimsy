@@ -68,15 +68,31 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const H = dimensions.h;
 
     // Synchronously generate URLs if they don't exist
+    // If the photos array changed (e.g. from a filter update), we need to ensure we have valid URLs
+    // for the currently provided Blobs. We will keep a separate map just for this render cycle
+    // to identify which URLs need to be preserved.
+    const currentRenderIds = new Set<string>();
+    
     photos.forEach((photo) => {
+      currentRenderIds.add(photo.id);
       if (!urlMapRef.current.has(photo.id)) {
         try {
           const blobToUse = photo.thumbnail || photo.blob;
-          const url = URL.createObjectURL(blobToUse);
-          urlMapRef.current.set(photo.id, url);
+          if (blobToUse) {
+            const url = URL.createObjectURL(blobToUse);
+            urlMapRef.current.set(photo.id, url);
+          }
         } catch (err) {
           console.error('Failed to create object URL for photo', photo.id, err);
         }
+      }
+    });
+
+    // Cleanup URLs that are no longer in the current photos array to prevent memory leaks
+    urlMapRef.current.forEach((url, id) => {
+      if (!currentRenderIds.has(id)) {
+        try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+        urlMapRef.current.delete(id);
       }
     });
 

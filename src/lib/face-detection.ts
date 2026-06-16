@@ -22,10 +22,14 @@ export interface FaceDetection {
   id: string;
   box: { x: number; y: number; width: number; height: number };
   descriptor: Float32Array; // 128-dim pseudo-descriptor derived from landmarks
-  landmarks?: { positions: { x: number; y: number }[] };
+  landmarks?: { positions: { x: number; y: number; z?: number }[] };
   score?: number;
   quality?: number;
   skinTone?: { r: number; g: number; b: number };
+  rotationApplied?: 0 | 90 | 180 | 270;
+  scalePyramidPass?: boolean;
+  likelyFalsePositive?: boolean;
+  preprocessingMs?: number;
 }
 
 // ─── Singleton Models ─────────────────────────────────────────────────────────
@@ -64,14 +68,14 @@ export async function loadFaceDetectionModel(): Promise<void> {
       FaceLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath:
-            "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float32/1/face_landmarker.task",
           delegate: "GPU",
         },
         runningMode: "IMAGE",
-        numFaces: 20,
-        minFaceDetectionConfidence: 0.45,
-        minFacePresenceConfidence: 0.45,
-        minTrackingConfidence: 0.45,
+        numFaces: 10,
+        minFaceDetectionConfidence: 0.4,
+        minFacePresenceConfidence: 0.4,
+        minTrackingConfidence: 0.4,
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false,
       }),
@@ -85,23 +89,200 @@ export async function loadFaceDetectionModel(): Promise<void> {
 
 // ─── Core Detection ───────────────────────────────────────────────────────────
 
+function applyUnsharpMask(imageData: ImageData, w: number, h: number): ImageData {
+  const data = imageData.data;
+  const out = new Uint8ClampedArray(data.length);
+  const kernel = [
+    0, -1,  0,
+   -1,  5, -1,
+    0, -1,  0
+  ];
+  
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = (y * w + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        let val = 0;
+        val += data[((y - 1) * w + (x - 1)) * 4 + c] * kernel[0];
+        val += data[((y - 1) * w + x) * 4 + c] * kernel[1];
+        val += data[((y - 1) * w + (x + 1)) * 4 + c] * kernel[2];
+        val += data[(y * w + (x - 1)) * 4 + c] * kernel[3];
+        val += data[(y * w + x) * 4 + c] * kernel[4];
+        val += data[(y * w + (x + 1)) * 4 + c] * kernel[5];
+        val += data[((y + 1) * w + (x - 1)) * 4 + c] * kernel[6];
+        val += data[((y + 1) * w + x) * 4 + c] * kernel[7];
+        val += data[((y + 1) * w + (x + 1)) * 4 + c] * kernel[8];
+        out[idx + c] = val;
+      }
+      out[idx + 3] = data[idx + 3];
+    }
+  }
+  
+  for (let i = 0; i < data.length; i += 4) {
+    if (out[i] === 0 && out[i+1] === 0 && out[i+2] === 0) {
+      out[i] = data[i]; out[i+1] = data[i+1]; out[i+2] = data[i+2]; out[i+3] = data[i+3];
+    }
+  }
+  
+  return new ImageData(out, w, h);
+}
+
+function rotateCanvas(canvas: HTMLCanvasElement, angle: number) {
+  const rotated = document.createElement("canvas");
+  const ctx = rotated.getContext("2d")!;
+  
+  if (angle === 90 || angle === 270) {
+    rotated.width = canvas.height;
+    rotated.height = canvas.width;
+  } else {
+    rotated.width = canvas.width;
+    rotated.height = canvas.height;
+  }
+  
+  ctx.translate(rotated.width / 2, rotated.height / 2);
+  ctx.rotate(angle * Math.PI / 180);
+  ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+  
+  return { canvas: rotated };
+}
+
+function upscaleCanvas(canvas: HTMLCanvasElement, scale: number) {
+  const upscaled = document.createElement("canvas");
+  upscaled.width = canvas.width * scale;
+  upscaled.height = canvas.height * scale;
+  const ctx = upscaled.getContext("2d")!;
+  ctx.drawImage(canvas, 0, 0, upscaled.width, upscaled.height);
+  return { canvas: upscaled };
+}
+
+function mapRotationBox(box: any, angle: number, w: number, h: number) {
+  let { x, y, width, height } = box;
+  if (angle === 90) {
+    return { x: y, y: w - x - width, width: height, height: width };
+  } else if (angle === 180) {
+    return { x: w - x - width, y: h - y - height, width, height };
+  } else if (angle === 270) {
+    return { x: h - y - height, y: x, width: height, height: width };
+  }
+  return box;
+}
+
+function iou(a: any, b: any) {
+  const x1 = Math.max(a.x, b.x);
+  const y1 = Math.max(a.y, b.y);
+  const x2 = Math.min(a.x + a.width, b.x + b.width);
+  const y2 = Math.min(a.y + a.height, b.y + b.height);
+  const intersection = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const aArea = a.width * a.height;
+  const bArea = b.width * b.height;
+  return intersection / (aArea + bArea - intersection);
+}
+
+function deduplicate(detections: FaceDetection[], iouThreshold: number): FaceDetection[] {
+  const result: FaceDetection[] = [];
+  for (const det of detections) {
+    let duplicate = false;
+    for (const existing of result) {
+      if (iou(det.box, existing.box) > iouThreshold) {
+        duplicate = true;
+        break;
+      }
+    }
+    if (!duplicate) result.push(det);
+  }
+  return result;
+}
+
+function preprocessImage(img: HTMLImageElement) {
+  const ow = img.naturalWidth || img.width;
+  const oh = img.naturalHeight || img.height;
+  
+  const maxDim = 1024;
+  const scale = Math.min(1, maxDim / Math.max(ow, oh));
+  const w = Math.round(ow * scale);
+  const h = Math.round(oh * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  
+  ctx.filter = "contrast(1.1) brightness(1.05)";
+  ctx.drawImage(img, 0, 0, w, h);
+  ctx.filter = "none";
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const sharpened = applyUnsharpMask(imageData, w, h);
+  ctx.putImageData(sharpened, 0, 0);
+
+  return { canvas, scaleX: ow / w, scaleY: oh / h };
+}
+
 export async function detectFaces(
   imageSource: Blob | HTMLImageElement
 ): Promise<FaceDetection[]> {
   await loadFaceDetectionModel();
   if (!faceDetector || !faceLandmarker) return [];
 
+  const startTime = performance.now();
   try {
     const img = await toHTMLImage(imageSource);
-    const { canvas, scaleX, scaleY } = downscale(img, 960);
+    
+    // Preprocess
+    const { canvas, scaleX, scaleY } = preprocessImage(img);
+    const preprocessingMs = performance.now() - startTime;
 
-    // Run both models in parallel
-    const [detResult, lmResult] = await Promise.all([
-      Promise.resolve(faceDetector.detect(canvas)),
-      Promise.resolve(faceLandmarker.detect(canvas)),
-    ]);
+    const runPass = async (c: HTMLCanvasElement, sx: number, sy: number, angle: any, isPyramid: boolean) => {
+      const [detResult, lmResult] = await Promise.all([
+        Promise.resolve(faceDetector!.detect(c)),
+        Promise.resolve(faceLandmarker!.detect(c)),
+      ]);
+      return buildDetections(img, c, detResult, lmResult, sx, sy, angle, isPyramid, preprocessingMs);
+    };
 
-    return buildDetections(img, canvas, detResult, lmResult, scaleX, scaleY);
+    let detections = await runPass(canvas, scaleX, scaleY, 0, false);
+
+    // Multi-angle retry
+    if (detections.length === 0) {
+      console.log("[FaceDetection] 0 faces, retrying with multi-angle passes...");
+      const angles = [90, 180, 270];
+      const allPasses: FaceDetection[] = [];
+      
+      for (const angle of angles) {
+        const rotated = rotateCanvas(canvas, angle);
+        const passDetections = await runPass(rotated.canvas, scaleX, scaleY, angle as any, false);
+        
+        const mapped = passDetections.map(d => {
+            d.box = mapRotationBox(d.box, angle, canvas.width, canvas.height);
+            return d;
+        });
+        allPasses.push(...mapped);
+      }
+      detections = deduplicate(allPasses, 0.4);
+    }
+
+    // Scale Pyramid for large images
+    if (img.width > 800 || img.height > 800) {
+      const upscaled = upscaleCanvas(canvas, 2.0);
+      const pyramidDetections = await runPass(upscaled.canvas, scaleX / 2.0, scaleY / 2.0, 0, true);
+      detections = deduplicate([...detections, ...pyramidDetections], 0.4);
+    }
+
+    // Filter Confidence
+    const imgArea = img.width * img.height;
+    detections = detections.filter(det => {
+      const area = det.box.width * det.box.height;
+      if (area / imgArea < 0.02) return false;
+
+      if (det.landmarks && det.landmarks.positions) {
+        const zVarCount = det.landmarks.positions.filter(p => Math.abs(p.z || 0) > 0.001).length;
+        if (zVarCount < 400) return false;
+      }
+      return true;
+    });
+
+    return detections.sort((a, b) => (b.score || 0) - (a.score || 0));
+
   } catch (err) {
     console.error("[FaceDetection] Error:", err);
     return [];
@@ -116,7 +297,10 @@ function buildDetections(
   detResult: FaceDetectorResult,
   lmResult: FaceLandmarkerResult,
   scaleX: number,
-  scaleY: number
+  scaleY: number,
+  rotationApplied: 0 | 90 | 180 | 270 = 0,
+  scalePyramidPass: boolean = false,
+  preprocessingMs: number = 0
 ): FaceDetection[] {
   const W = canvas.width;
   const H = canvas.height;
@@ -134,21 +318,32 @@ function buildDetections(
       height: bbox.height * scaleY,
     };
 
-    // Map MediaPipe 478-point landmarks to 68-point-compatible format
     const lm478 = lmResult.faceLandmarks[i];
-    let landmarks478: { positions: { x: number; y: number }[] } | undefined;
+    let landmarks478: { positions: { x: number; y: number; z?: number }[] } | undefined;
     let descriptor: Float32Array = new Float32Array(128);
+    let likelyFalsePositive = false;
 
     if (lm478) {
       const positions = lm478.map((pt) => ({
         x: pt.x * W * scaleX,
         y: pt.y * H * scaleY,
+        z: pt.z,
       }));
       landmarks478 = { positions };
       descriptor = landmarksToDescriptor(lm478, W, H);
+
+      const leftEye = lm478[33];
+      const rightEye = lm478[263];
+      const noseTip = lm478[4];
+      if (leftEye && rightEye && noseTip) {
+        const yDiff = Math.abs(leftEye.y - rightEye.y);
+        const eyeHorizontal = yDiff < 0.05;
+        const noseBetween = noseTip.x > Math.min(leftEye.x, rightEye.x) && noseTip.x < Math.max(leftEye.x, rightEye.x);
+        if (!eyeHorizontal && !noseBetween) likelyFalsePositive = true;
+      }
     }
 
-    const { skinTone, quality } = analyzeRegion(originalImg, box, landmarks478);
+    const { skinTone, quality } = analyzeRegion(originalImg, box, landmarks478 as any);
 
     faces.push({
       id: `face-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -158,10 +353,14 @@ function buildDetections(
       score: det.categories[0]?.score ?? 0,
       quality,
       skinTone,
+      rotationApplied,
+      scalePyramidPass,
+      likelyFalsePositive,
+      preprocessingMs,
     });
   }
 
-  console.log(`[FaceDetection] Found ${faces.length} faces`);
+  console.log(`[FaceDetection] Found ${faces.length} faces (angle=${rotationApplied}, pyramid=${scalePyramidPass})`);
   return faces;
 }
 
