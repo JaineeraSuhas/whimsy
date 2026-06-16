@@ -73,18 +73,22 @@ export const useMousePositionRef = (
             updatePosition(x, y);
         };
 
-        // Listen for mouse, touch, and device orientation events
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("touchmove", handleTouchMove, { passive: false });
+        // Listen for mouse only on desktop devices
+        const isDesktop = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+        if (isDesktop) {
+            window.addEventListener("mousemove", handleMouseMove);
+        }
 
+        // On mobile, strictly rely ONLY on device orientation. Do not use touchmove.
         if (permissionGranted) {
             console.log('[Tilt] Attaching deviceorientation listener');
             window.addEventListener("deviceorientation", handleDeviceOrientation);
         }
 
         return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("touchmove", handleTouchMove);
+            if (isDesktop) {
+                window.removeEventListener("mousemove", handleMouseMove);
+            }
             window.removeEventListener("deviceorientation", handleDeviceOrientation);
         };
     }, [containerRef, permissionGranted]);
