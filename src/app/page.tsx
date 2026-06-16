@@ -65,10 +65,9 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         </div>
         <button
           onClick={handleEnter}
-          className="relative z-10 flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-6 py-2 text-xs font-medium text-white/90 transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95"
+          className="relative z-10 flex items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-8 py-3 text-xs font-bold tracking-widest text-white transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 uppercase shadow-xl"
         >
-          <span>Enter Arena</span>
-          <div className="h-1.5 w-1.5 rounded-full bg-white opacity-70" />
+          ENTER ARENA
         </button>
       </motion.div>
 
