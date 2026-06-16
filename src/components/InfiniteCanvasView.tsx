@@ -99,11 +99,13 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const W = dimensions.w;
     const H = dimensions.h;
 
-    // We tile the REFERENCE_LAYOUT if there are more than 9 photos
-    const tileCols = Math.ceil(Math.sqrt(Math.ceil(photos.length / REFERENCE_LAYOUT.length)));
-    // Base tile dimensions to spread out the repeating pattern
-    const tileW = Math.max(1200, W * 1.5);
-    const tileH = Math.max(800, H * 1.5);
+    // We tile the REFERENCE_LAYOUT based on how many photos we have
+    const totalTiles = Math.max(1, Math.ceil(photos.length / REFERENCE_LAYOUT.length));
+    const tileCols = Math.ceil(Math.sqrt(totalTiles));
+    
+    // Condense the layout to fit 9 images tightly on one screen with slight edge overlap
+    const tileW = Math.max(1000, W * 1.05);
+    const tileH = Math.max(700, H * 1.05);
 
     const computedCards = photos.map((photo, index) => {
       const patternIdx = index % REFERENCE_LAYOUT.length;
@@ -114,11 +116,12 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
       const ref = REFERENCE_LAYOUT[patternIdx];
 
       // Calculate absolute position based on tile offset and reference percentage
-      // The Framer snippet uses top/left % and translate(-50%, -50%)
       const left = tileCol * tileW + (ref.left / 100) * tileW;
       const top = tileRow * tileH + (ref.top / 100) * tileH;
 
-      const finalWidth = ref.width;
+      // Scale images to be larger so they fill the screen and overlap slightly
+      const scaleFactor = Math.max(W / 1440, 1) * 1.35; 
+      const finalWidth = ref.width * scaleFactor;
 
       // Aspect ratio from the reference layout ensures perfect replication of grid slots
       const aspect = ref.aspect;
@@ -158,7 +161,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     });
     // The layout grid max dimensions
     const totalW = tileCols * tileW;
-    const tileRows = Math.ceil(photos.length / tileCols);
+    const tileRows = Math.ceil(totalTiles / tileCols);
     const totalH = Math.max(tileRows * tileH, tileH);
 
     return {
