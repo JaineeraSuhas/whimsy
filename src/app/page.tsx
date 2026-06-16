@@ -80,7 +80,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 1"
-            className="w-16 h-16 md:w-24 md:h-24 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-36 h-36 md:w-24 md:h-24 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         <FloatingElement depth={1} className="top-[10%] left-[32%]">
@@ -88,7 +88,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 2"
-            className="w-20 h-20 md:w-28 md:h-28 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-48 md:w-28 md:h-28 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         <FloatingElement depth={2} className="top-[2%] left-[53%]">
@@ -96,7 +96,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
             alt="Gallery 3"
-            className="w-28 h-40 md:w-40 md:h-52 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-64 h-80 md:w-40 md:h-52 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         <FloatingElement depth={1} className="top-[0%] left-[83%]">
@@ -104,7 +104,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
             alt="Gallery 4"
-            className="w-24 h-24 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-40 h-40 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
 
@@ -113,7 +113,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
             alt="Gallery 5"
-            className="w-28 h-28 md:w-36 md:h-36 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-52 h-52 md:w-36 md:h-36 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         <FloatingElement depth={2} className="top-[70%] left-[77%]">
@@ -121,7 +121,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
             alt="Gallery 6"
-            className="w-28 h-28 md:w-36 md:h-48 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-56 h-56 md:w-36 md:h-48 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
 
@@ -130,7 +130,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
             alt="Gallery 7"
-            className="w-40 md:w-52 h-full object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-72 h-80 md:w-52 md:h-full object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         <FloatingElement depth={1} className="top-[80%] left-[50%]">
@@ -138,7 +138,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
             alt="Gallery 8"
-            className="w-24 h-24 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-48 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         </Floating>

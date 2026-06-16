@@ -58,8 +58,8 @@ export const useMousePositionRef = (
         const handleDeviceOrientation = (ev: DeviceOrientationEvent) => {
             if (ev.gamma === null || ev.beta === null) return;
 
-            // Sensitivity multiplier for mobile tilt
-            const sensitivity = 2.0;
+            // Sensitivity multiplier for mobile tilt (massively increased for strong hovering effect)
+            const sensitivity = 10.0;
 
             // Map gamma (-30 to 30) to screen width centering
             const gamma = Math.min(Math.max(ev.gamma, -30), 30);
@@ -79,11 +79,10 @@ export const useMousePositionRef = (
             window.addEventListener("mousemove", handleMouseMove);
         }
 
-        // On mobile, strictly rely ONLY on device orientation. Do not use touchmove.
-        if (permissionGranted) {
-            console.log('[Tilt] Attaching deviceorientation listener');
-            window.addEventListener("deviceorientation", handleDeviceOrientation);
-        }
+        // On mobile, rely ONLY on device orientation. Attach immediately (works on Android).
+        // iOS 13+ requires requestPermission via user interaction, handled separately.
+        console.log('[Tilt] Attaching deviceorientation listener');
+        window.addEventListener("deviceorientation", handleDeviceOrientation);
 
         return () => {
             if (isDesktop) {
