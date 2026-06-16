@@ -198,7 +198,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
 
     // Calculate aspect ratio for plane geometry
     const aspect = photo.metadata.width / photo.metadata.height;
-    const height = 1.5; // Base height unit
+    const height = 3.5; // Base height unit significantly increased to match Infinite Canvas scale
     const width = height * aspect;
 
     return (
@@ -246,11 +246,9 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
 
             {/* Border / Frame */}
             <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[width + 0.05, height + 0.05]} />
+                <planeGeometry args={[width + 0.1, height + 0.1]} />
                 <meshBasicMaterial color={hovered ? "#FF4D00" : "#FFFFFF"} opacity={0.3} transparent />
             </mesh>
-
-
         </group>
     );
 }
@@ -266,12 +264,12 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
         let rot: [number, number, number] = [0, 0, 0];
 
         if (layout === 'spiral') {
-            const spacing = isMobile ? 0.6 : 0.4;
+            const spacing = isMobile ? 0.8 : 0.6;
             const angle = index * spacing;
-            const yOffset = isMobile ? 0.3 : 0.5;
+            const yOffset = isMobile ? 0.6 : 0.8;
             const y = index * yOffset - (photos.length * (yOffset / 2)); // Center vertically
-            const radiusBase = isMobile ? 5 : 8;
-            const r = radiusBase + (index * (isMobile ? 0.05 : 0.1));
+            const radiusBase = isMobile ? 8 : 12;
+            const r = radiusBase + (index * (isMobile ? 0.1 : 0.2));
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
         }
@@ -279,7 +277,7 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
             // Fibonacci Sphere
             const phi = Math.acos(-1 + (2 * index) / Math.max(1, photos.length - 1));
             const theta = Math.sqrt(photos.length * Math.PI) * phi;
-            const r = isMobile ? 15 : 25; // Radius
+            const r = isMobile ? 20 : 35; // Radius increased for bigger photos
 
             pos = [
                 r * Math.cos(theta) * Math.sin(phi),
@@ -298,41 +296,39 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
         }
         else if (layout === 'particles') {
             // Random Cloud / Particles
-            // Use index as seed to keep positions stable across calls
             const rX = seededRandom(index * 13.5) - 0.5;
             const rY = seededRandom(index * 27.2) - 0.5;
             const rZ = seededRandom(index * 41.9) - 0.5;
 
-            const spread = isMobile ? 20 : 35;
+            const spread = isMobile ? 35 : 55;
 
             pos = [rX * spread, rY * spread, rZ * spread];
-            // Rotation is handled by lookAt in useFrame, init to 0
             rot = [0, 0, 0];
         }
         else if (layout === 'wave') {
-            const cols = isMobile ? 4 : 8;
-            const spacing = isMobile ? 2 : 3;
+            const cols = isMobile ? 3 : 6;
+            const spacing = isMobile ? 3.5 : 5;
             const x = (index % cols) * spacing - (cols * spacing) / 2;
-            const z = Math.floor(index / cols) * spacing - 10;
-            const y = Math.sin(x * 0.3) * 3 + Math.cos(z * 0.2) * 2;
+            const z = Math.floor(index / cols) * spacing - 15;
+            const y = Math.sin(x * 0.3) * 5 + Math.cos(z * 0.2) * 3;
             pos = [x, y, z];
             rot = [0, 0, 0];
         }
         else if (layout === 'helix') {
-            const angle = index * (isMobile ? 0.8 : 0.6);
-            const y = index * (isMobile ? 0.6 : 0.8) - (photos.length * 0.4);
-            const r = isMobile ? 8 : 12;
+            const angle = index * (isMobile ? 1.0 : 0.8);
+            const y = index * (isMobile ? 1.0 : 1.4) - (photos.length * 0.6);
+            const r = isMobile ? 12 : 18;
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2, 0];
         }
         else if (layout === 'cylinder') {
-            const rows = Math.ceil(photos.length / (isMobile ? 6 : 12));
+            const rows = Math.ceil(photos.length / (isMobile ? 4 : 8));
             const photosPerRow = Math.ceil(photos.length / rows);
             const row = Math.floor(index / photosPerRow);
             const col = index % photosPerRow;
             const angle = (col / photosPerRow) * Math.PI * 2;
-            const r = isMobile ? 8 : 15;
-            const y = row * 3 - (rows * 1.5);
+            const r = isMobile ? 14 : 22;
+            const y = row * 5 - (rows * 2.5);
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
         }
