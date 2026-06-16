@@ -95,8 +95,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
     const parentWidth = contentWidth ? contentWidth : Math.max(parentRect.width, contentMaxX);
     const parentHeight = contentHeight ? contentHeight : Math.max(parentRect.height, contentMaxY);
 
-    const repsX = [0, parentWidth];
-    const repsY = [0, parentHeight];
+    const repsX = [-parentWidth, 0, parentWidth];
+    const repsY = [-parentHeight, 0, parentHeight];
 
     elementGroupsRef.current = [];
 
@@ -126,8 +126,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         transform: htmlChild.style.transform,
       };
 
-      // Create 3 identical clones per item to build 2x2 quadrant block
-      for (let i = 0; i < 3; i++) {
+      // Create 8 identical clones per item to build a 3x3 quadrant block
+      for (let i = 0; i < 8; i++) {
         const clone = htmlChild.cloneNode(true) as HTMLElement;
         clone.dataset.isClone = "true";
         parentElement.appendChild(clone);
@@ -185,8 +185,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
     scroll.current.target = { x: 0, y: 0 };
     scroll.current.last = { x: 0, y: 0 };
 
-    const tileSizeW = parentWidth * 2;
-    const tileSizeH = parentHeight * 2;
+    const tileSizeW = parentWidth * 3;
+    const tileSizeH = parentHeight * 3;
     parentDimensions.current = { width: parentWidth, height: parentHeight, tileSizeW, tileSizeH };
   };
 
