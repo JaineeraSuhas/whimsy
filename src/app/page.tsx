@@ -55,7 +55,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
     >
       {/* Center content — always on top */}
       <motion.div
-        className="relative z-50 text-center space-y-8 items-center flex flex-col"
+        className="relative z-50 text-center flex flex-col items-center justify-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.88, delay: 1.5 }}
@@ -65,9 +65,9 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         </div>
         <p
           onClick={handleEnter}
-          className="text-xs hover:scale-110 transition-transform bg-white text-black rounded-full py-2 px-6 cursor-pointer font-medium mt-8"
+          className="absolute -bottom-32 text-xs hover:scale-110 transition-transform bg-white text-black rounded-full py-3 px-8 cursor-pointer font-bold tracking-widest shadow-xl shadow-white/10"
         >
-          Enter Arena
+          ENTER ARENA
         </p>
       </motion.div>
 

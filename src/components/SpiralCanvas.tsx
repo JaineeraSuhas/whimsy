@@ -198,7 +198,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
 
     // Calculate aspect ratio for plane geometry
     const aspect = photo.metadata.width / photo.metadata.height;
-    const height = 3.5; // Base height unit significantly increased to match Infinite Canvas scale
+    const height = 6.0; // Base height unit massively increased to strictly match Infinite Canvas scale
     const width = height * aspect;
 
     return (
@@ -264,12 +264,12 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
         let rot: [number, number, number] = [0, 0, 0];
 
         if (layout === 'spiral') {
-            const spacing = isMobile ? 0.8 : 0.6;
+            const spacing = isMobile ? 1.2 : 0.9;
             const angle = index * spacing;
-            const yOffset = isMobile ? 0.6 : 0.8;
+            const yOffset = isMobile ? 1.0 : 1.3;
             const y = index * yOffset - (photos.length * (yOffset / 2)); // Center vertically
-            const radiusBase = isMobile ? 8 : 12;
-            const r = radiusBase + (index * (isMobile ? 0.1 : 0.2));
+            const radiusBase = isMobile ? 14 : 20;
+            const r = radiusBase + (index * (isMobile ? 0.15 : 0.3));
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
         }
@@ -277,7 +277,7 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
             // Fibonacci Sphere
             const phi = Math.acos(-1 + (2 * index) / Math.max(1, photos.length - 1));
             const theta = Math.sqrt(photos.length * Math.PI) * phi;
-            const r = isMobile ? 20 : 35; // Radius increased for bigger photos
+            const r = isMobile ? 32 : 50; // Massively increased for giant canvas feel
 
             pos = [
                 r * Math.cos(theta) * Math.sin(phi),
@@ -300,35 +300,35 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
             const rY = seededRandom(index * 27.2) - 0.5;
             const rZ = seededRandom(index * 41.9) - 0.5;
 
-            const spread = isMobile ? 35 : 55;
+            const spread = isMobile ? 60 : 90;
 
             pos = [rX * spread, rY * spread, rZ * spread];
             rot = [0, 0, 0];
         }
         else if (layout === 'wave') {
-            const cols = isMobile ? 3 : 6;
-            const spacing = isMobile ? 3.5 : 5;
+            const cols = isMobile ? 3 : 5;
+            const spacing = isMobile ? 5.5 : 8;
             const x = (index % cols) * spacing - (cols * spacing) / 2;
-            const z = Math.floor(index / cols) * spacing - 15;
-            const y = Math.sin(x * 0.3) * 5 + Math.cos(z * 0.2) * 3;
+            const z = Math.floor(index / cols) * spacing - 25;
+            const y = Math.sin(x * 0.3) * 8 + Math.cos(z * 0.2) * 5;
             pos = [x, y, z];
             rot = [0, 0, 0];
         }
         else if (layout === 'helix') {
-            const angle = index * (isMobile ? 1.0 : 0.8);
-            const y = index * (isMobile ? 1.0 : 1.4) - (photos.length * 0.6);
-            const r = isMobile ? 12 : 18;
+            const angle = index * (isMobile ? 1.5 : 1.2);
+            const y = index * (isMobile ? 1.6 : 2.2) - (photos.length * 1.0);
+            const r = isMobile ? 20 : 30;
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2, 0];
         }
         else if (layout === 'cylinder') {
-            const rows = Math.ceil(photos.length / (isMobile ? 4 : 8));
+            const rows = Math.ceil(photos.length / (isMobile ? 4 : 6));
             const photosPerRow = Math.ceil(photos.length / rows);
             const row = Math.floor(index / photosPerRow);
             const col = index % photosPerRow;
             const angle = (col / photosPerRow) * Math.PI * 2;
-            const r = isMobile ? 14 : 22;
-            const y = row * 5 - (rows * 2.5);
+            const r = isMobile ? 24 : 35;
+            const y = row * 8 - (rows * 4);
             pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
             rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
         }
