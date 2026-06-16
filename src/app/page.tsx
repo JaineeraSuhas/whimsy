@@ -7,13 +7,14 @@ import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
 import Floating, { FloatingElement } from '@/components/ui/parallax-floating';
 import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName, clearAllPhotos } from '@/lib/db';
-import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings } from 'lucide-react';
+import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings, Palette, X } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails } from '@/lib/face-processing';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import InfiniteCanvasView from '@/components/InfiniteCanvasView';
 import { CircleMenu } from '@/components/ui/circle-menu';
+import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu';
 
 
 
@@ -446,39 +447,55 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Design Modal - Layout Features for Mobile */}
+      {/* Design Modal - Fluid Layout Selector for Mobile */}
       <AnimatePresence>
         {showDesignModal && (
           <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl pointer-events-auto md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-end pb-24 bg-black/60 backdrop-blur-md pointer-events-auto md:hidden"
+            onClick={() => setShowDesignModal(false)}
           >
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 text-center">
-              <h2 className="text-xl font-bold tracking-tight">Design</h2>
-              <p className="text-xs opacity-50 uppercase tracking-widest mt-1">Select 3D Layout</p>
+            <div className="relative pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+              <MenuContainer isExpanded={true} onToggle={() => setShowDesignModal(false)}>
+                <MenuItem 
+                  icon={
+                    <div className="relative w-6 h-6">
+                      <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-100 scale-100 rotate-0 [div[data-expanded=true]_&]:opacity-0 [div[data-expanded=true]_&]:scale-0 [div[data-expanded=true]_&]:rotate-180">
+                        <Palette size={24} strokeWidth={1.5} />
+                      </div>
+                      <div className="absolute inset-0 transition-all duration-300 ease-in-out origin-center opacity-0 scale-0 -rotate-180 [div[data-expanded=true]_&]:opacity-100 [div[data-expanded=true]_&]:scale-100 [div[data-expanded=true]_&]:rotate-0">
+                        <X size={24} strokeWidth={1.5} />
+                      </div>
+                    </div>
+                  } 
+                />
+                {[
+                  { id: 'canvas', icon: <Library size={18} /> },
+                  { id: 'spiral', icon: <Grid size={18} /> },
+                  { id: 'sphere', icon: <Circle size={18} /> },
+                  { id: 'particles', icon: <Sparkles size={18} /> },
+                  { id: 'wave', icon: <Waves size={18} /> },
+                  { id: 'helix', icon: <Dna size={18} /> },
+                  { id: 'cylinder', icon: <Cylinder size={18} /> }
+                ].map((m) => (
+                  <MenuItem 
+                    key={m.id} 
+                    isActive={layoutMode === m.id}
+                    onClick={() => {
+                        setLayoutMode(m.id as any);
+                        setShowDesignModal(false);
+                    }}
+                    icon={m.icon}
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-widest absolute top-1/2 left-14 -translate-y-1/2 text-white bg-black/50 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full whitespace-nowrap shadow-xl">
+                        {m.id}
+                    </span>
+                  </MenuItem>
+                ))}
+              </MenuContainer>
             </div>
-
-            <div className="grid grid-cols-2 gap-4 w-full max-w-xs p-6">
-              {['canvas', 'spiral', 'sphere', 'particles', 'wave', 'helix', 'cylinder'].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setLayoutMode(m as typeof layoutMode)}
-                  className={`py-6 rounded-3xl text-[10px] uppercase font-black tracking-widest border transition-all flex flex-col items-center justify-center gap-3 ${layoutMode === m ? 'bg-white text-black border-white shadow-xl scale-105' : 'bg-white/5 text-white/40 border-white/10'}`}
-                >
-
-                  {m}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowDesignModal(false)}
-              className="mt-12 px-12 py-4 rounded-full bg-white text-black font-extrabold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
-            >
-              DONE
-            </button>
           </motion.div>
         )}
       </AnimatePresence>
