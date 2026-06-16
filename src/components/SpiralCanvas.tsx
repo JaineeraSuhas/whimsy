@@ -383,39 +383,10 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'glo
 
 interface SpiralCanvasProps {
     photos: Photo[];
-    externalLayoutMode?: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder';
-    onLayoutChange?: (mode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder') => void;
-    onClearPhotos?: () => void;
+    layoutMode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder';
 }
 
-export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChange, onClearPhotos }: SpiralCanvasProps) {
-    const [internalLayoutMode, setInternalLayoutMode] = useState<'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('spiral');
-    const layoutMode = externalLayoutMode || internalLayoutMode;
-    const setLayoutMode = onLayoutChange || setInternalLayoutMode;
-
-    const [showSettings, setShowSettings] = useState(false);
-
-    const handleClear = () => {
-        GlobalTextureCache.clear();
-        if (onClearPhotos) onClearPhotos();
-    };
-
-    // Auto-clear cache if photos are externally cleared
-    useEffect(() => {
-        if (photos.length === 0) {
-            GlobalTextureCache.clear();
-        }
-    }, [photos.length]);
-
-    const layoutOptions = [
-        { id: 'layout-spiral', value: 'spiral', label: 'Spiral' },
-        { id: 'layout-sphere', value: 'sphere', label: 'Sphere' },
-        { id: 'layout-particles', value: 'particles', label: 'Particles' },
-        { id: 'layout-wave', value: 'wave', label: 'Wave' },
-        { id: 'layout-helix', value: 'helix', label: 'Helix' },
-        { id: 'layout-cylinder', value: 'cylinder', label: 'Cylinder' },
-    ];
-
+export default function SpiralCanvas({ photos, layoutMode }: SpiralCanvasProps) {
     if (photos.length === 0) {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 gap-4">
@@ -429,78 +400,6 @@ export default function SpiralCanvas({ photos, externalLayoutMode, onLayoutChang
 
     return (
         <div className="w-full h-full relative">
-            {/* HUD / Controls Overlay - Hidden on Mobile */}
-            <div className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-10 flex-col gap-4 pointer-events-none">
-                {/* Layout Circle Menu */}
-                <div className="pointer-events-auto">
-                    <CircleMenu
-                        items={[
-                            {
-                                label: 'Spiral',
-                                icon: <Grid3x3 size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('spiral'),
-                                isActive: layoutMode === 'spiral'
-                            },
-                            {
-                                label: 'Sphere',
-                                icon: <Circle size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('sphere'),
-                                isActive: layoutMode === 'sphere'
-                            },
-                            {
-                                label: 'Particles',
-                                icon: <Sparkles size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('particles'),
-                                isActive: layoutMode === 'particles'
-                            },
-                            {
-                                label: 'Wave',
-                                icon: <Waves size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('wave'),
-                                isActive: layoutMode === 'wave'
-                            },
-                            {
-                                label: 'Helix',
-                                icon: <Dna size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('helix'),
-                                isActive: layoutMode === 'helix'
-                            },
-                            {
-                                label: 'Cylinder',
-                                icon: <Cylinder size={16} className="text-white" />,
-                                onClick: () => setLayoutMode('cylinder'),
-                                isActive: layoutMode === 'cylinder'
-                            },
-                        ]}
-                    />
-                </div>
-            </div>
-
-            {/* Settings - Positioned at Bottom Left - Hidden on Mobile */}
-            <div className="hidden md:flex absolute bottom-24 left-8 z-10 flex-col gap-3 pointer-events-none">
-                {/* Settings Button */}
-                <button
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="px-4 py-3 rounded-full glass bg-black/40 backdrop-blur-md border border-white/10 text-white/80 text-sm hover:text-white hover:bg-white/20 transition-all pointer-events-auto flex items-center gap-2"
-                >
-                    <Settings size={16} />
-                    <span className="hidden md:inline">Settings</span>
-                </button>
-
-                {/* Settings Panel */}
-                {showSettings && (
-                    <div className="p-4 rounded-2xl glass bg-black/80 backdrop-blur-md border border-white/10 pointer-events-auto w-56">
-                        <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium">Actions</p>
-                        <button
-                            onClick={handleClear}
-                            className="w-full px-4 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-500/30"
-                        >
-                            Clear All Photos
-                        </button>
-                    </div>
-                )}
-            </div>
-
             <Canvas camera={{ position: [0, 0, 40], fov: 60 }} gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
                 <ambientLight intensity={1.5} />
                 <pointLight position={[10, 10, 10]} intensity={1.5} />

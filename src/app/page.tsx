@@ -7,11 +7,13 @@ import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
 import Floating, { FloatingElement } from '@/components/ui/parallax-floating';
 import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName, clearAllPhotos } from '@/lib/db';
-import { Grid, Users, Plus, Library } from 'lucide-react';
+import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails } from '@/lib/face-processing';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import InfiniteCanvasView from '@/components/InfiniteCanvasView';
+import { CircleMenu } from '@/components/ui/circle-menu';
 
 
 
@@ -152,7 +154,7 @@ export default function Home() {
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [showPeopleModal, setShowPeopleModal] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('spiral');
+  const [layoutMode, setLayoutMode] = useState<'canvas' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('canvas');
 
   const fetchPhotos = useCallback(async () => {
     setLoading(true);
@@ -231,9 +233,88 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
 
-      {/* Main 3D View — Spiral layouts */}
+      {/* Main View Area (Infinite Canvas or 3D Spatial layouts) */}
       <div className="absolute inset-0 z-0">
-        <SpiralCanvas photos={filteredPhotos} externalLayoutMode={layoutMode} onLayoutChange={setLayoutMode} onClearPhotos={handleClearStorage} />
+        {layoutMode === 'canvas' ? (
+          <InfiniteCanvasView photos={filteredPhotos} />
+        ) : (
+          <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} />
+        )}
+      </div>
+
+      {/* Desktop HUD / Controls Overlay - Left side, hidden on mobile */}
+      <div className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-40 flex-col gap-4 pointer-events-none">
+        <div className="pointer-events-auto">
+          <CircleMenu
+            items={[
+              {
+                label: 'Canvas',
+                icon: <Library size={16} className="text-white" />,
+                onClick: () => setLayoutMode('canvas'),
+                isActive: layoutMode === 'canvas'
+              },
+              {
+                label: 'Spiral',
+                icon: <Grid size={16} className="text-white" />,
+                onClick: () => setLayoutMode('spiral'),
+                isActive: layoutMode === 'spiral'
+              },
+              {
+                label: 'Sphere',
+                icon: <Circle size={16} className="text-white" />,
+                onClick: () => setLayoutMode('sphere'),
+                isActive: layoutMode === 'sphere'
+              },
+              {
+                label: 'Particles',
+                icon: <Sparkles size={16} className="text-white" />,
+                onClick: () => setLayoutMode('particles'),
+                isActive: layoutMode === 'particles'
+              },
+              {
+                label: 'Wave',
+                icon: <Waves size={16} className="text-white" />,
+                onClick: () => setLayoutMode('wave'),
+                isActive: layoutMode === 'wave'
+              },
+              {
+                label: 'Helix',
+                icon: <Dna size={16} className="text-white" />,
+                onClick: () => setLayoutMode('helix'),
+                isActive: layoutMode === 'helix'
+              },
+              {
+                label: 'Cylinder',
+                icon: <Cylinder size={16} className="text-white" />,
+                onClick: () => setLayoutMode('cylinder'),
+                isActive: layoutMode === 'cylinder'
+              },
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* Desktop Settings - Bottom Left, hidden on mobile */}
+      <div className="hidden md:flex absolute bottom-24 left-8 z-40 flex-col gap-3 pointer-events-none">
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white/80 text-sm hover:text-white transition-all pointer-events-auto flex items-center gap-2 backdrop-blur-xl shadow-2xl"
+        >
+          <Settings size={16} />
+          <span>Settings</span>
+        </button>
+
+        {showSettings && (
+          <div className="p-4 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 pointer-events-auto w-56 shadow-2xl">
+            <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium font-mono">Actions</p>
+            <button
+              onClick={handleClearStorage}
+              className="w-full px-4 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-500/30 cursor-pointer"
+            >
+              Clear All Photos
+            </button>
+          </div>
+        )}
       </div>
 
       {/* UI Overlay - Top Status Bar (iOS/macOS Style) */}
@@ -372,13 +453,14 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 w-full max-w-xs p-6">
-              {['spiral', 'sphere', 'particles', 'wave', 'helix', 'cylinder'].map((m) => (
+              {['canvas', 'spiral', 'sphere', 'particles', 'wave', 'helix', 'cylinder'].map((m) => (
                 <button
                   key={m}
                   onClick={() => setLayoutMode(m as typeof layoutMode)}
                   className={`py-6 rounded-3xl text-[10px] uppercase font-black tracking-widest border transition-all flex flex-col items-center justify-center gap-3 ${layoutMode === m ? 'bg-white text-black border-white shadow-xl scale-105' : 'bg-white/5 text-white/40 border-white/10'}`}
                 >
                   <span className="text-base">
+                    {m === 'canvas' && '🖼️'}
                     {m === 'spiral' && '🌀'}
                     {m === 'sphere' && '🌐'}
                     {m === 'particles' && '✨'}
