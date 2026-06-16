@@ -76,7 +76,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
         <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
         {/* Top Left */}
-        <FloatingElement depth={0.5} className="top-[5%] left-[-5%] md:top-[8%] md:left-[8%]">
+        <FloatingElement depth={0.5} className="top-[5%] left-[-5%] md:top-[8%] md:left-[11%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
@@ -85,7 +85,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
         {/* Hidden on Mobile - Top Mid */}
-        <FloatingElement depth={1} className="hidden md:block md:top-[2%] md:left-[35%]">
+        <FloatingElement depth={1} className="hidden md:block md:top-[10%] md:left-[32%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
@@ -94,7 +94,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
         {/* Top Right */}
-        <FloatingElement depth={2} className="top-[-5%] right-[-5%] md:top-[-2%] md:left-auto md:right-[15%]">
+        <FloatingElement depth={2} className="top-[-5%] right-[-5%] md:top-[2%] md:left-[53%] md:right-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
@@ -103,7 +103,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
         {/* Middle Right */}
-        <FloatingElement depth={1} className="top-[35%] right-[-10%] md:top-[25%] md:left-auto md:right-[5%]">
+        <FloatingElement depth={1} className="top-[35%] right-[-10%] md:top-[0%] md:left-[83%] md:right-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
@@ -112,7 +112,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
         {/* Middle Left */}
-        <FloatingElement depth={1.5} className="top-[45%] left-[-10%] md:top-[35%] md:left-[2%]">
+        <FloatingElement depth={1.5} className="top-[45%] left-[-10%] md:top-[40%] md:left-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
@@ -120,17 +120,8 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-24 h-24 md:w-36 md:h-36 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        {/* Bottom Right High */}
-        <FloatingElement depth={0.8} className="bottom-[25%] right-[-5%] md:top-[55%] md:bottom-auto md:left-auto md:right-[2%]">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={exampleImages[0]}
-            alt="Gallery 9"
-            className="w-20 h-20 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
-          />
-        </FloatingElement>
         {/* Bottom Right Corner */}
-        <FloatingElement depth={2} className="bottom-[5%] right-[5%] md:top-[75%] md:bottom-auto md:left-auto md:right-[10%]">
+        <FloatingElement depth={2} className="bottom-[5%] right-[5%] md:top-[70%] md:left-[77%] md:right-auto md:bottom-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
@@ -139,7 +130,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
         {/* Bottom Left Corner */}
-        <FloatingElement depth={3} className="bottom-[5%] left-[-5%] md:top-[80%] md:bottom-auto md:left-[10%]">
+        <FloatingElement depth={3} className="bottom-[5%] left-[-5%] md:top-[73%] md:left-[15%] md:bottom-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
@@ -148,7 +139,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
         {/* Hidden on Mobile - Bottom Mid */}
-        <FloatingElement depth={1} className="hidden md:block md:top-[85%] md:left-[55%]">
+        <FloatingElement depth={1} className="hidden md:block md:top-[80%] md:left-[50%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
@@ -156,13 +147,14 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-32 h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
-        {/* Hidden on Mobile - Bottom Mid Left */}
-        <FloatingElement depth={1.2} className="hidden md:block md:top-[82%] md:left-[35%]">
+
+        {/* Extras - Hidden on desktop to restore exact look, only visible on mobile as fillers */}
+        <FloatingElement depth={0.8} className="bottom-[25%] right-[-5%] md:hidden">
           <motion.img
             initial={{ opacity: 0 }}
-            src={exampleImages[1]}
-            alt="Gallery 10"
-            className="w-28 h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
+            src={exampleImages[0]}
+            alt="Gallery 9"
+            className="w-20 h-20 object-cover active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
         </Floating>
