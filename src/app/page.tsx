@@ -393,7 +393,7 @@ export default function Home() {
                 selectedPersonIds={selectedPersonIds}
                 onSelectPerson={(id) => {
                   setSelectedPersonIds(prev =>
-                    prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+                    prev.length === 1 && prev[0] === id ? [] : [id]
                   );
                 }}
                 onUpdateName={async (id, name) => {
@@ -422,7 +422,7 @@ export default function Home() {
                 selectedPersonIds={selectedPersonIds}
                 onSelectPerson={(id) => {
                   setSelectedPersonIds(prev =>
-                    prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+                    prev.length === 1 && prev[0] === id ? [] : [id]
                   );
                 }}
                 onUpdateName={async (id, name) => {
