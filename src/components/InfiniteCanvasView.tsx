@@ -93,8 +93,8 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
   }, [fullResUrls]);
 
   // Compute deterministic scattered layout for cards — matching the reference site style
-  const cards = useMemo(() => {
-    if (!isMounted) return [];
+  const layoutData = useMemo(() => {
+    if (!isMounted) return { cards: [], totalW: 0, totalH: 0 };
 
     const W = dimensions.w;
     const H = dimensions.h;
@@ -105,7 +105,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const tileW = Math.max(1200, W * 1.5);
     const tileH = Math.max(800, H * 1.5);
 
-    return photos.map((photo, index) => {
+    const computedCards = photos.map((photo, index) => {
       const patternIdx = index % REFERENCE_LAYOUT.length;
       const tileIdx = Math.floor(index / REFERENCE_LAYOUT.length);
       const tileRow = Math.floor(tileIdx / tileCols);
@@ -115,8 +115,8 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
       // Calculate absolute position based on tile offset and reference percentage
       // The Framer snippet uses top/left % and translate(-50%, -50%)
-      const left = tileCol * tileW + (ref.left / 100) * tileW - (tileCols > 1 ? tileW/2 : 0);
-      const top = tileRow * tileH + (ref.top / 100) * tileH - (tileCols > 1 ? tileH/2 : 0);
+      const left = tileCol * tileW + (ref.left / 100) * tileW;
+      const top = tileRow * tileH + (ref.top / 100) * tileH;
 
       const finalWidth = ref.width;
 
@@ -135,7 +135,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
       }
 
       // Clean name (remove file extension)
-      const cleanName = photo.metadata.originalName.replace(/\\.[^/.]+$/, "");
+      const cleanName = photo.metadata.originalName.replace(/\.[^/.]+$/, "");
 
       // Staggered animation delay
       const delay = index * 0.06;
@@ -156,6 +156,16 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
         get imageUrl() { return urlMapRef.current.get(photo.id) || ''; },
       };
     });
+    // The layout grid max dimensions
+    const totalW = tileCols * tileW;
+    const tileRows = Math.ceil(photos.length / tileCols);
+    const totalH = Math.max(tileRows * tileH, tileH);
+
+    return {
+      cards: computedCards,
+      totalW,
+      totalH,
+    };
   }, [photos, dimensions, isMounted]);
 
   if (!isMounted || photos.length === 0) {
@@ -167,20 +177,20 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     );
   }
 
-  const activeCard = activePhotoIndex !== null ? cards[activePhotoIndex] : null;
+  const activeCard = activePhotoIndex !== null ? layoutData.cards[activePhotoIndex] : null;
 
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-[#050505]">
       {/* Scroll/Drag indicator — reference style */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex items-center gap-3 mix-blend-difference">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex items-center gap-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
+          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <span className="text-[10px] font-mono tracking-[0.25em] text-white uppercase">
-          SCROLL / DRAG TO MOVE
+        <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-blue-700 uppercase">
+          SCROLL/DRAG TO MOVE
         </span>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
+          <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </div>
 
@@ -191,8 +201,10 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
         enableDrag={true}
         parallaxEnabled={true}
         parallaxIntensity={0.25}
+        contentWidth={layoutData.totalW}
+        contentHeight={layoutData.totalH}
       >
-        {cards.map((card) => (
+        {layoutData.cards.map((card) => (
           <div
             key={card.photo.id}
             className="absolute"
@@ -244,24 +256,18 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
               </div>
 
               {/* Metadata text block — matching reference exactly */}
-              <div className="flex flex-col items-start w-full gap-0" style={{ fontFamily: "'Roboto Mono', monospace" }}>
-                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  {card.cleanName}
+              <div className="flex flex-col items-start w-full gap-[2px] mt-1" style={{ fontFamily: "'Roboto Mono', monospace" }}>
+                <span className="text-[6px] text-white font-bold leading-[1.3em] w-full whitespace-pre-wrap break-words">
+                  {card.cleanName || 'Untitled'}
                 </span>
                 <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  {card.details}
+                  12 x 6 inch C type hand print
                 </span>
-                {card.location ? (
-                  <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                    {card.location}
-                  </span>
-                ) : (
-                  <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                    Edition of 1 Plus and additional artist Proof
-                  </span>
-                )}
                 <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  {card.formattedYear}
+                  Edition of 1 Plus and additional artist Proof
+                </span>
+                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
+                  2024
                 </span>
               </div>
             </motion.div>
@@ -276,7 +282,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
             imageUrl={fullResUrls[activeCard.photo.id] || activeCard.imageUrl}
             onClose={() => setActivePhotoIndex(null)}
             onNext={
-              activePhotoIndex !== null && activePhotoIndex < cards.length - 1
+              activePhotoIndex !== null && activePhotoIndex < layoutData.cards.length - 1
                 ? () => setActivePhotoIndex(activePhotoIndex + 1)
                 : undefined
             }

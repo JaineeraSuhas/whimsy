@@ -25,6 +25,8 @@ export interface InfiniteCanvasProps {
   parallaxEnabled?: boolean;
   parallaxIntensity?: number;
   className?: string;
+  contentWidth?: number;
+  contentHeight?: number;
 }
 
 export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
@@ -36,6 +38,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
   parallaxEnabled = true,
   parallaxIntensity = 1,
   className = "",
+  contentWidth,
+  contentHeight,
 }) => {
   const internalScrollSpeed = mapSpeedUiToInternal(scrollSpeed);
   const internalDragSpeed = mapSpeedUiToInternal(dragSpeed);
@@ -88,8 +92,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
       if (bottom > contentMaxY) contentMaxY = bottom;
     });
 
-    const parentWidth = Math.max(parentRect.width, contentMaxX);
-    const parentHeight = Math.max(parentRect.height, contentMaxY);
+    const parentWidth = contentWidth ? contentWidth : Math.max(parentRect.width, contentMaxX);
+    const parentHeight = contentHeight ? contentHeight : Math.max(parentRect.height, contentMaxY);
 
     const repsX = [0, parentWidth];
     const repsY = [0, parentHeight];
