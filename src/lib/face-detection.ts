@@ -59,7 +59,7 @@ export async function loadFaceDetectionModel(): Promise<void> {
         baseOptions: {
           modelAssetPath:
             "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
-          delegate: "GPU", // Falls back to CPU automatically
+          delegate: "CPU",
         },
         runningMode: "IMAGE",
         minDetectionConfidence: 0.2,
@@ -69,7 +69,7 @@ export async function loadFaceDetectionModel(): Promise<void> {
         baseOptions: {
           modelAssetPath:
             "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-          delegate: "GPU",
+          delegate: "CPU",
         },
         runningMode: "IMAGE",
         numFaces: 10,
@@ -272,12 +272,8 @@ export async function detectFaces(
     const imgArea = img.width * img.height;
     detections = detections.filter(det => {
       const area = det.box.width * det.box.height;
-      if (area / imgArea < 0.02) return false;
-
-      if (det.landmarks && det.landmarks.positions) {
-        const zVarCount = det.landmarks.positions.filter(p => Math.abs(p.z || 0) > 0.001).length;
-        if (zVarCount < 400) return false;
-      }
+      // Drop incredibly tiny false positives (less than 0.1% of image)
+      if (area / imgArea < 0.001) return false;
       return true;
     });
 
