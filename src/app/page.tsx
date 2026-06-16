@@ -146,7 +146,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         </FloatingElement>
 
         {/* Gallery 8 */}
-        <FloatingElement depth={1} className="top-[62%] left-[40%] md:top-[80%] md:left-[50%] md:right-auto">
+        <FloatingElement depth={1} className="top-[55%] left-[65%] md:top-[80%] md:left-[50%] md:right-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
