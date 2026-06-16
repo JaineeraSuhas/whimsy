@@ -56,29 +56,37 @@ export default function Lightbox({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-2xl flex items-center justify-center select-none"
         onClick={onClose}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Image — spring scale entrance */}
+        {/* Image wrapper */}
         <motion.div
           key={photo.id}
-          initial={{ scale: 0.88, opacity: 0, y: 24 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.88, opacity: 0, y: 24 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-          className="relative max-w-[calc(100vw-120px)] md:max-w-[calc(100vw-160px)] max-h-[88vh] flex items-center justify-center"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="relative max-w-[92vw] max-h-[88vh] flex items-center justify-center"
           onClick={(e) => e.stopPropagation()} // don't close when clicking image
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={photo.metadata.originalName}
-            className="max-w-[calc(100vw-120px)] md:max-w-[calc(100vw-160px)] max-h-[88vh] object-contain rounded-xl select-none shadow-[0_32px_80px_rgba(0,0,0,0.9)]"
+            className="max-w-[92vw] max-h-[88vh] object-contain rounded-xl select-none shadow-[0_32px_80px_rgba(0,0,0,0.9)]"
             draggable={false}
           />
+
+          {/* Close button — positioned ON the image top right */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 md:top-6 md:right-6 z-[10000] p-3 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 text-white transition-all duration-300 cursor-pointer active:scale-95 shadow-2xl backdrop-blur-xl"
+          >
+            <X className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
 
           {/* Left swipe hint on sides */}
           {onPrev && (
@@ -100,18 +108,6 @@ export default function Lightbox({
             </button>
           )}
         </motion.div>
-
-        {/* Close button — fixed at top right to avoid Next arrow collision */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ delay: 0.1 }}
-          onClick={onClose}
-          className="fixed top-4 right-4 md:top-8 md:right-8 z-[10000] p-4 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 text-white transition-all duration-200 cursor-pointer active:scale-95 shadow-2xl backdrop-blur-xl"
-        >
-          <X className="w-6 h-6 md:w-8 md:h-8" />
-        </motion.button>
       </motion.div>
     </AnimatePresence>
   );

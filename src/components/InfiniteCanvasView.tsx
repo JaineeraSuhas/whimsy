@@ -262,7 +262,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
                 <img
                   src={card.imageUrl}
                   alt={card.photo.metadata.originalName}
-                  className="w-full h-full object-cover select-none transition-transform duration-[1.2s] ease-out group-hover:scale-[1.04]"
+                  className="w-full h-full object-cover select-none transition-transform duration-[1.2s] ease-out md:group-hover:scale-[1.04] active:scale-[0.98]"
                   draggable={false}
                   loading="lazy"
                   onError={(e) => {
