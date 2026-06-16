@@ -148,15 +148,6 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
           />
         </FloatingElement>
 
-        {/* Extras - Hidden on desktop to restore exact look, only visible on mobile as fillers */}
-        <FloatingElement depth={0.8} className="bottom-[25%] right-[-5%] md:hidden">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={exampleImages[0]}
-            alt="Gallery 9"
-            className="w-20 h-20 object-cover active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
-          />
-        </FloatingElement>
         </Floating>
       </div>
     </div>
