@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Compass } from 'lucide-react';
-import InfiniteCanvas from './ui/InfiniteCanvas';
+import { InfiniteCanvas } from './ui/InfiniteCanvas';
 import Lightbox from './ui/Lightbox';
 import { Photo } from '@/lib/db';
 
@@ -12,22 +12,25 @@ interface InfiniteCanvasViewProps {
   onOpenPhoto?: (photo: Photo) => void;
 }
 
-const FALLBACK_LOCATIONS = [
-  'Kyoto, Japan',
-  'Paris, France',
-  'Rome, Italy',
-  'Reykjavík, Iceland',
-  'Zermatt, Switzerland',
-  'Cape Town, South Africa',
-  'New York, USA',
-  'Amalfi Coast, Italy',
-  'Sydney, Australia',
-  'San Francisco, USA',
-  'Santorini, Greece',
-  'Barcelona, Spain',
-  'Bali, Indonesia',
-  'London, United Kingdom',
-  'Lofoten, Norway',
+/**
+ * Deterministic pseudo-random from seed, returns 0..1
+ */
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
+// Extracted from the actual Framer HTML snippet
+const REFERENCE_LAYOUT = [
+  { width: 244, top: 46, left: 59, zIndex: 1, aspect: 0.8 },
+  { width: 212, top: 2, left: 50, zIndex: 2, aspect: 0.800593 },
+  { width: 273, top: 61, left: 72, zIndex: 3, aspect: 0.8 },
+  { width: 238, top: 52, left: 91, zIndex: 4, aspect: 1 },
+  { width: 162, top: 12, left: 21, zIndex: 5, aspect: 1.07731 },
+  { width: 143, top: 65, left: 31, zIndex: 6, aspect: 0.946809 },
+  { width: 256, top: 81, left: 19, zIndex: 7, aspect: 0.802998 },
+  { width: 174, top: 34, left: 3, zIndex: 8, aspect: 0.707012 },
+  { width: 114, top: 24, left: 83, zIndex: 9, aspect: 0.717901 },
 ];
 
 export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanvasViewProps) {
@@ -44,7 +47,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Generate object URLs from thumbnail blobs (smaller, fast, reliable)
+  // Generate object URLs from thumbnail blobs
   const urlMapRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
@@ -89,64 +92,63 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     };
   }, [fullResUrls]);
 
-  // Compute deterministic coordinates and info per card
+  // Compute deterministic scattered layout for cards — matching the reference site style
   const cards = useMemo(() => {
     if (!isMounted) return [];
 
     const W = dimensions.w;
     const H = dimensions.h;
 
+    // We tile the REFERENCE_LAYOUT if there are more than 9 photos
+    const tileCols = Math.ceil(Math.sqrt(Math.ceil(photos.length / REFERENCE_LAYOUT.length)));
+    // Base tile dimensions to spread out the repeating pattern
+    const tileW = Math.max(1200, W * 1.5);
+    const tileH = Math.max(800, H * 1.5);
+
     return photos.map((photo, index) => {
-      const cols = Math.ceil(Math.sqrt(photos.length * 1.5)) || 3;
-      const col = index % cols;
-      const row = Math.floor(index / cols);
-      const rowsCount = Math.ceil(photos.length / cols) || 1;
+      const patternIdx = index % REFERENCE_LAYOUT.length;
+      const tileIdx = Math.floor(index / REFERENCE_LAYOUT.length);
+      const tileRow = Math.floor(tileIdx / tileCols);
+      const tileCol = tileIdx % tileCols;
 
-      // Tighter spacing for the museum look
-      const spacingX = (W * 1.5) / cols;
-      const spacingY = (H * 1.5) / rowsCount;
+      const ref = REFERENCE_LAYOUT[patternIdx];
 
-      const seed = (index * 1337 + 42) % 1000;
-      const rX = (seed % 100) / 100 - 0.5;
-      const rY = ((seed * 7) % 100) / 100 - 0.5;
-      
-      // ZERO rotation as per reference
-      const rRotation = 0; 
-      const rDelay = (seed % 10) * 0.04;
+      // Calculate absolute position based on tile offset and reference percentage
+      // The Framer snippet uses top/left % and translate(-50%, -50%)
+      const left = tileCol * tileW + (ref.left / 100) * tileW - (tileCols > 1 ? tileW/2 : 0);
+      const top = tileRow * tileH + (ref.top / 100) * tileH - (tileCols > 1 ? tileH/2 : 0);
 
-      const left = col * spacingX + spacingX * 0.5 + rX * spacingX * 0.5;
-      const top = row * spacingY + spacingY * 0.5 + rY * spacingY * 0.5;
+      const finalWidth = ref.width;
+
+      // Aspect ratio from the reference layout ensures perfect replication of grid slots
+      const aspect = ref.aspect;
+
+      const finalHeight = finalWidth / aspect;
 
       const dateObj = new Date(photo.metadata.date || photo.createdAt);
       const formattedYear = dateObj.getFullYear().toString();
 
-      const aspect = photo.metadata.width && photo.metadata.height
-        ? photo.metadata.width / photo.metadata.height
-        : 4 / 3;
-
-      // Larger target sizes for the museum print look
-      const targetHeight = 350 + (seed % 150); // Varied heights from 350 to 500
-      const targetWidth = targetHeight * aspect;
-
-      // If we have EXIF location, format it. We'll assume photo.metadata.exif.location could exist.
-      // Since we don't have a reliable extractor, we only show it if explicitly present.
+      // Location from EXIF if available
       let locationStr = '';
-      if (photo.metadata.exif && (photo.metadata.exif as any).location) {
-        locationStr = (photo.metadata.exif as any).location as string;
+      if (photo.metadata.exif && typeof photo.metadata.exif['location'] === 'string') {
+        locationStr = photo.metadata.exif['location'];
       }
 
-      // Name processing: remove extension
-      const cleanName = photo.metadata.originalName.replace(/\.[^/.]+$/, "");
+      // Clean name (remove file extension)
+      const cleanName = photo.metadata.originalName.replace(/\\.[^/.]+$/, "");
+
+      // Staggered animation delay
+      const delay = index * 0.06;
 
       return {
         photo,
         index,
         left,
         top,
-        width: targetWidth,
-        height: targetHeight + 100, // Extra room for the multi-line text block
-        rotation: rRotation,
-        delay: rDelay,
+        width: finalWidth,
+        height: finalHeight,
+        zIndex: ref.zIndex,
+        delay,
         location: locationStr,
         formattedYear,
         cleanName,
@@ -169,39 +171,43 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-[#050505]">
-      {/* Scroll indicator exactly like the reference */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex items-center gap-3">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/0m" className="text-white">
-          <path d="M12 4V20M12 4L8 8M12 4L16 8M4 12H20M4 12L8 8M4 12L8 16M20 12L16 8M20 12L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Scroll/Drag indicator — reference style */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex items-center gap-3 mix-blend-difference">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-        <span className="text-[11px] font-mono tracking-widest text-white uppercase font-bold">
-          SCROLL/DRAG TO MOVE
+        <span className="text-[10px] font-mono tracking-[0.25em] text-white uppercase">
+          SCROLL / DRAG TO MOVE
         </span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
 
       <InfiniteCanvas
-        scrollSpeed={0.5}
-        dragSpeed={0.65}
-        ease={0.15}
+        scrollSpeed={0.6}
+        dragSpeed={0.7}
+        ease={0.1}
         enableDrag={true}
         parallaxEnabled={true}
-        parallaxIntensity={0.3} // Subtle parallax
+        parallaxIntensity={0.25}
       >
         {cards.map((card) => (
           <div
             key={card.photo.id}
-            className="absolute origin-top-left"
+            className="absolute"
             style={{
               left: `${card.left}px`,
               top: `${card.top}px`,
               width: `${card.width}px`,
-              height: `${card.height}px`,
+              zIndex: card.zIndex,
+              transform: 'translate(-50%, -50%)', // Match Framer's exact transform
             }}
           >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: card.delay }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: Math.min(card.delay, 1.2), ease: [0.25, 0.1, 0.25, 1] }}
               onClick={(e) => {
                 e.stopPropagation();
                 if (onOpenPhoto) {
@@ -210,19 +216,20 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
                   setActivePhotoIndex(card.index);
                 }
               }}
-              className="w-full h-full flex flex-col cursor-pointer group select-none"
+              className="w-full flex flex-col cursor-pointer group select-none gap-[8px]"
             >
-              {/* Sharp, unstyled image block perfectly matching reference */}
-              <div 
+              {/* Image container */}
+              <div
                 className="w-full relative overflow-hidden bg-[#111]"
-                style={{ height: card.height - 100 }}
+                style={{ height: `${card.height}px` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={card.imageUrl}
                   alt={card.photo.metadata.originalName}
-                  className="w-full h-full object-cover select-none transition-transform duration-[1.5s] ease-out group-hover:scale-105"
+                  className="w-full h-full object-cover select-none transition-transform duration-[1.2s] ease-out group-hover:scale-[1.04]"
                   draggable={false}
+                  loading="lazy"
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (!target.dataset.retried) {
@@ -236,20 +243,24 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
                 />
               </div>
 
-              {/* Museum-style multi-line left-aligned metadata */}
-              <div className="mt-3 flex flex-col items-start justify-start w-full font-mono">
-                <span className="text-[10px] md:text-[11px] text-white font-medium mb-0.5 truncate w-full">
+              {/* Metadata text block — matching reference exactly */}
+              <div className="flex flex-col items-start w-full gap-0" style={{ fontFamily: "'Roboto Mono', monospace" }}>
+                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
                   {card.cleanName}
                 </span>
-                <span className="text-[9px] md:text-[10px] text-white/70 truncate w-full leading-relaxed">
+                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
                   {card.details}
                 </span>
-                {card.location && (
-                  <span className="text-[9px] md:text-[10px] text-white/70 truncate w-full leading-relaxed">
+                {card.location ? (
+                  <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
                     {card.location}
                   </span>
+                ) : (
+                  <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
+                    Edition of 1 Plus and additional artist Proof
+                  </span>
                 )}
-                <span className="text-[9px] md:text-[10px] text-white/70 truncate w-full leading-relaxed mt-1">
+                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
                   {card.formattedYear}
                 </span>
               </div>
