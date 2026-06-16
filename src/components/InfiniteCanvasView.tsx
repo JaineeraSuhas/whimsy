@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Calendar, Compass, ZoomIn } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import InfiniteCanvas from './ui/InfiniteCanvas';
 import Lightbox from './ui/Lightbox';
 import { Photo } from '@/lib/db';
@@ -27,7 +27,7 @@ const FALLBACK_LOCATIONS = [
   'Barcelona, Spain',
   'Bali, Indonesia',
   'London, United Kingdom',
-  'Lofoten, Norway'
+  'Lofoten, Norway',
 ];
 
 export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanvasViewProps) {
@@ -39,39 +39,55 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
   useEffect(() => {
     setIsMounted(true);
     setDimensions({ w: window.innerWidth, h: window.innerHeight });
-
-    const handleResize = () => {
-      setDimensions({ w: window.innerWidth, h: window.innerHeight });
-    };
+    const handleResize = () => setDimensions({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Generate object URLs for Blobs once to prevent re-generation lag
-  const imageUrls = useMemo(() => {
+  // Generate object URLs from thumbnail blobs (smaller, fast, reliable)
+  const urlMapRef = useRef<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    const currentMap = urlMapRef.current;
+    const currentIds = new Set(photos.map((p) => p.id));
+
+    currentMap.forEach((url, id) => {
+      if (!currentIds.has(id)) {
+        URL.revokeObjectURL(url);
+        currentMap.delete(id);
+      }
+    });
+
+    photos.forEach((photo) => {
+      if (!currentMap.has(photo.id)) {
+        try {
+          const blobToUse = photo.thumbnail || photo.blob;
+          const url = URL.createObjectURL(blobToUse);
+          currentMap.set(photo.id, url);
+        } catch (err) {
+          console.error('Failed to create object URL for photo', photo.id, err);
+        }
+      }
+    });
+  }, [photos]);
+
+  const fullResUrls = useMemo(() => {
     const urls: Record<string, string> = {};
     photos.forEach((photo) => {
       try {
         urls[photo.id] = URL.createObjectURL(photo.blob);
-      } catch (err) {
-        console.error('Failed to create object URL for photo', photo.id, err);
-      }
+      } catch { /* ignore */ }
     });
     return urls;
   }, [photos]);
 
-  // Cleanup object URLs on unmount/change
   useEffect(() => {
     return () => {
-      Object.values(imageUrls).forEach((url) => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch (e) {
-          // ignore
-        }
+      Object.values(fullResUrls).forEach((url) => {
+        try { URL.revokeObjectURL(url); } catch { /* ignore */ }
       });
     };
-  }, [imageUrls]);
+  }, [fullResUrls]);
 
   // Compute deterministic coordinates and info per card
   const cards = useMemo(() => {
@@ -81,44 +97,46 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const H = dimensions.h;
 
     return photos.map((photo, index) => {
-      // Deterministic layout grid columns based on count
       const cols = Math.ceil(Math.sqrt(photos.length * 1.5)) || 3;
       const col = index % cols;
       const row = Math.floor(index / cols);
-
       const rowsCount = Math.ceil(photos.length / cols) || 1;
-      
-      const spacingX = (W * 1.8) / cols;
-      const spacingY = (H * 1.8) / rowsCount;
 
-      // Seeded random offset generator
+      // Tighter spacing for the museum look
+      const spacingX = (W * 1.5) / cols;
+      const spacingY = (H * 1.5) / rowsCount;
+
       const seed = (index * 1337 + 42) % 1000;
       const rX = (seed % 100) / 100 - 0.5;
       const rY = ((seed * 7) % 100) / 100 - 0.5;
-      const rRotation = ((seed * 31) % 18) - 9; // -9 to +9 deg
-      const rDelay = (seed % 10) * 0.05;
+      
+      // ZERO rotation as per reference
+      const rRotation = 0; 
+      const rDelay = (seed % 10) * 0.04;
 
-      const left = col * spacingX + spacingX * 0.5 + rX * spacingX * 0.35;
-      const top = row * spacingY + spacingY * 0.5 + rY * spacingY * 0.35;
-
-      // Extract metadata info
-      const hash = Array.from(photo.id).reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const location = FALLBACK_LOCATIONS[hash % FALLBACK_LOCATIONS.length];
+      const left = col * spacingX + spacingX * 0.5 + rX * spacingX * 0.5;
+      const top = row * spacingY + spacingY * 0.5 + rY * spacingY * 0.5;
 
       const dateObj = new Date(photo.metadata.date || photo.createdAt);
-      const formattedDate = dateObj.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
+      const formattedYear = dateObj.getFullYear().toString();
 
-      // Calculate photo aspect-ratio dimensions
-      const aspect = (photo.metadata.width && photo.metadata.height)
+      const aspect = photo.metadata.width && photo.metadata.height
         ? photo.metadata.width / photo.metadata.height
         : 4 / 3;
 
-      const targetHeight = 220;
-      const targetWidth = Math.min(Math.max(targetHeight * aspect, 180), 320);
+      // Larger target sizes for the museum print look
+      const targetHeight = 350 + (seed % 150); // Varied heights from 350 to 500
+      const targetWidth = targetHeight * aspect;
+
+      // If we have EXIF location, format it. We'll assume photo.metadata.exif.location could exist.
+      // Since we don't have a reliable extractor, we only show it if explicitly present.
+      let locationStr = '';
+      if (photo.metadata.exif && (photo.metadata.exif as any).location) {
+        locationStr = (photo.metadata.exif as any).location as string;
+      }
+
+      // Name processing: remove extension
+      const cleanName = photo.metadata.originalName.replace(/\.[^/.]+$/, "");
 
       return {
         photo,
@@ -126,15 +144,17 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
         left,
         top,
         width: targetWidth,
-        height: targetHeight + 70, // including metadata space
+        height: targetHeight + 100, // Extra room for the multi-line text block
         rotation: rRotation,
         delay: rDelay,
-        location,
-        formattedDate,
-        imageUrl: imageUrls[photo.id] || '',
+        location: locationStr,
+        formattedYear,
+        cleanName,
+        details: `${photo.metadata.width} x ${photo.metadata.height}px ${photo.metadata.mimeType.split('/')[1]?.toUpperCase() || 'IMAGE'}`,
+        get imageUrl() { return urlMapRef.current.get(photo.id) || ''; },
       };
     });
-  }, [photos, dimensions, isMounted, imageUrls]);
+  }, [photos, dimensions, isMounted]);
 
   if (!isMounted || photos.length === 0) {
     return (
@@ -145,34 +165,32 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     );
   }
 
-  // Active Lightbox Photo
   const activeCard = activePhotoIndex !== null ? cards[activePhotoIndex] : null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-black">
-      {/* HUD Guide Overlay */}
-      <div className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/5 px-4 py-2 rounded-full pointer-events-none">
-        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-        <span className="text-xs font-mono tracking-widest text-zinc-300 uppercase">Infinite Memories</span>
+    <div className="relative w-full h-full overflow-hidden select-none bg-[#050505]">
+      {/* Scroll indicator exactly like the reference */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex items-center gap-3">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/0m" className="text-white">
+          <path d="M12 4V20M12 4L8 8M12 4L16 8M4 12H20M4 12L8 8M4 12L8 16M20 12L16 8M20 12L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span className="text-[11px] font-mono tracking-widest text-white uppercase font-bold">
+          SCROLL/DRAG TO MOVE
+        </span>
       </div>
 
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none text-[11px] font-mono tracking-wider text-zinc-500 uppercase bg-black/40 px-4 py-1.5 rounded-full border border-white/5 backdrop-blur-md hidden md:block">
-        Drag or Scroll to Explore Canvas
-      </div>
-
-      {/* Infinite Scrolling Engine */}
       <InfiniteCanvas
         scrollSpeed={0.5}
         dragSpeed={0.65}
         ease={0.15}
         enableDrag={true}
         parallaxEnabled={true}
-        parallaxIntensity={0.6}
+        parallaxIntensity={0.3} // Subtle parallax
       >
         {cards.map((card) => (
           <div
             key={card.photo.id}
-            className="absolute origin-center transition-all duration-300"
+            className="absolute origin-top-left"
             style={{
               left: `${card.left}px`,
               top: `${card.top}px`,
@@ -180,17 +198,10 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
               height: `${card.height}px`,
             }}
           >
-            {/* The individual photo card element */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: card.delay, type: 'spring' }}
-              whileHover={{ 
-                scale: 1.05, 
-                rotate: 0, 
-                zIndex: 100,
-                y: -10
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: card.delay }}
               onClick={(e) => {
                 e.stopPropagation();
                 if (onOpenPhoto) {
@@ -199,47 +210,59 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
                   setActivePhotoIndex(card.index);
                 }
               }}
-              style={{ rotate: card.rotation }}
-              className="w-full h-full flex flex-col p-3 rounded-2xl bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700/60 shadow-xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-shadow duration-300 cursor-pointer overflow-hidden group select-none"
+              className="w-full h-full flex flex-col cursor-pointer group select-none"
             >
-              {/* Photo Image box */}
-              <div className="w-full flex-1 rounded-xl overflow-hidden relative bg-zinc-900 border border-white/5">
+              {/* Sharp, unstyled image block perfectly matching reference */}
+              <div 
+                className="w-full relative overflow-hidden bg-[#111]"
+                style={{ height: card.height - 100 }}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={card.imageUrl}
                   alt={card.photo.metadata.originalName}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 select-none"
+                  className="w-full h-full object-cover select-none transition-transform duration-[1.5s] ease-out group-hover:scale-105"
                   draggable={false}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = '1';
+                      try {
+                        const url = URL.createObjectURL(card.photo.blob);
+                        target.src = url;
+                      } catch { /* ignore */ }
+                    }
+                  }}
                 />
-                {/* Hover zoom overlay */}
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                  <ZoomIn className="w-7 h-7 text-white/80 filter drop-shadow" />
-                </div>
               </div>
 
-              {/* Metadata Details info row */}
-              <div className="mt-3.5 flex flex-col justify-end gap-1.5 select-none">
-                <div className="flex items-center gap-1.5 text-zinc-300 group-hover:text-white transition-colors">
-                  <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                  <span className="text-[11px] font-medium tracking-wide truncate">{card.location}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-zinc-500 font-mono text-[9.5px]">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-500/80 shrink-0" />
-                  <span>{card.formattedDate}</span>
-                </div>
+              {/* Museum-style multi-line left-aligned metadata */}
+              <div className="mt-3 flex flex-col items-start justify-start w-full font-mono">
+                <span className="text-[10px] md:text-[11px] text-white font-medium mb-0.5 truncate w-full">
+                  {card.cleanName}
+                </span>
+                <span className="text-[9px] md:text-[10px] text-white/70 truncate w-full leading-relaxed">
+                  {card.details}
+                </span>
+                {card.location && (
+                  <span className="text-[9px] md:text-[10px] text-white/70 truncate w-full leading-relaxed">
+                    {card.location}
+                  </span>
+                )}
+                <span className="text-[9px] md:text-[10px] text-white/70 truncate w-full leading-relaxed mt-1">
+                  {card.formattedYear}
+                </span>
               </div>
             </motion.div>
           </div>
         ))}
       </InfiniteCanvas>
 
-      {/* Fullscreen Lightbox Modal */}
       <AnimatePresence>
         {activeCard && (
           <Lightbox
             photo={activeCard.photo}
-            location={activeCard.location}
-            formattedDate={activeCard.formattedDate}
+            imageUrl={fullResUrls[activeCard.photo.id] || activeCard.imageUrl}
             onClose={() => setActivePhotoIndex(null)}
             onNext={
               activePhotoIndex !== null && activePhotoIndex < cards.length - 1

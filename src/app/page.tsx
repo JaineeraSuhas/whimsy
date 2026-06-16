@@ -50,27 +50,30 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
 
   return (
     <div
-      className="flex w-full h-screen justify-center items-center bg-black overflow-hidden"
+      className="relative flex w-full h-screen justify-center items-center bg-black overflow-hidden"
       ref={scope}
     >
+      {/* Center content — always on top */}
       <motion.div
-        className="z-50 text-center space-y-4 items-center flex flex-col"
+        className="relative z-50 text-center space-y-5 items-center flex flex-col"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.88, delay: 1.5 }}
       >
-        <div className="text-5xl md:text-7xl z-50 text-white font-bold italic tracking-tight">
+        <div className="text-5xl md:text-7xl text-white font-bold italic tracking-tight">
           <StandText text="whimsy." />
         </div>
         <p
           onClick={handleEnter}
-          className="text-xs z-50 hover:scale-110 transition-transform bg-white text-black rounded-full py-2 px-6 cursor-pointer font-medium"
+          className="text-xs hover:scale-110 transition-transform bg-white text-black rounded-full py-2 px-6 cursor-pointer font-medium"
         >
           Enter Arena
         </p>
       </motion.div>
 
-      <Floating ref={floatingRef} sensitivity={-1} className="overflow-hidden">
+      {/* Floating background images — absolutely positioned behind text */}
+      <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+        <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
         <FloatingElement depth={0.5} className="top-[8%] left-[11%]">
           <motion.img
             initial={{ opacity: 0 }}
@@ -137,7 +140,8 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
             className="w-24 h-24 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-      </Floating>
+        </Floating>
+      </div>
     </div>
   );
 };

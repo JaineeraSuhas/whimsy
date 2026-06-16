@@ -82,8 +82,8 @@ export const StandText: React.FC<StandTextProps> = ({ text }) => {
                     font-black uppercase text-[inherit] select-none leading-none inline-block
                   `}
                   style={{
-                    WebkitTextStroke: '2.5px #000000',
-                    color: isForeground ? '#ffffff' : '#000000',
+                    WebkitTextStroke: isForeground ? '0px transparent' : '2px rgba(0,0,0,0.85)',
+                    color: isForeground ? '#ffffff' : 'rgba(0,0,0,0.0)',
                     paintOrder: 'stroke fill',
                     transformOrigin: 'bottom center',
                     pointerEvents: isForeground ? 'auto' : 'none',

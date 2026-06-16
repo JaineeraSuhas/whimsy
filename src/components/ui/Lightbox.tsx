@@ -1,28 +1,28 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, MapPin, Calendar } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Photo } from '@/lib/db';
 
 interface LightboxProps {
   photo: Photo | null;
+  imageUrl: string; // pre-generated, passed from parent to avoid double blob creation
   onClose: () => void;
   onNext?: () => void;
   onPrev?: () => void;
-  location?: string;
-  formattedDate?: string;
 }
 
 export default function Lightbox({
   photo,
+  imageUrl,
   onClose,
   onNext,
   onPrev,
-  location,
-  formattedDate,
 }: LightboxProps) {
-  // Keypress navigation support
+  const touchStartX = useRef<number>(0);
+
+  // Keyboard navigation
   useEffect(() => {
     if (!photo) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,107 +34,85 @@ export default function Lightbox({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [photo, onClose, onNext, onPrev]);
 
-  if (!photo) return null;
-
-  // Generate local object URL for the blob
-  const imageUrl = URL.createObjectURL(photo.blob);
-
-  // Clean up object URL on unmount
-  const cleanupUrl = () => {
-    try {
-      URL.revokeObjectURL(imageUrl);
-    } catch (e) {
-      // ignore
+  // Touch swipe support
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 60) {
+      if (dx < 0 && onNext) onNext();
+      else if (dx > 0 && onPrev) onPrev();
     }
   };
 
+  if (!photo) return null;
+
   return (
     <AnimatePresence>
+      {/* Full-screen backdrop — tap anywhere to close */}
       <motion.div
+        key="lightbox-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl select-none"
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-[9999] bg-black/98 backdrop-blur-2xl flex items-center justify-center select-none"
+        onClick={onClose}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        {/* Top bar controls */}
-        <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-[10000]">
-          <div className="flex flex-col text-white">
-            <span className="text-xs tracking-widest text-zinc-400 font-mono uppercase">Memory Capture</span>
-            <h3 className="text-lg font-light tracking-wide mt-1">{photo.metadata.originalName}</h3>
-          </div>
-          <button
-            onClick={() => {
-              cleanupUrl();
-              onClose();
-            }}
-            className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 backdrop-blur-md transition-all duration-300 active:scale-95 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Left Arrow */}
-        {onPrev && (
-          <button
-            onClick={onPrev}
-            className="absolute left-6 p-4 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5 transition-all duration-300 active:scale-90 z-[10000] cursor-pointer hidden md:block"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-        )}
-
-        {/* Image Container with entrance animation */}
+        {/* Image — spring scale entrance */}
         <motion.div
-          initial={{ scale: 0.95, y: 15, opacity: 0 }}
-          animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.95, y: 15, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-          className="relative max-w-[90vw] max-h-[75vh] flex flex-col items-center justify-center p-2 rounded-2xl bg-zinc-900/40 border border-white/5 overflow-hidden shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
+          key={photo.id}
+          initial={{ scale: 0.88, opacity: 0, y: 24 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.88, opacity: 0, y: 24 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+          className="relative max-w-[92vw] max-h-[88vh] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()} // don't close when clicking image
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={photo.metadata.originalName}
-            className="max-w-full max-h-[70vh] object-contain rounded-lg select-none"
+            className="max-w-[92vw] max-h-[88vh] object-contain rounded-xl select-none shadow-[0_32px_80px_rgba(0,0,0,0.9)]"
             draggable={false}
           />
+
+          {/* Left swipe hint on sides */}
+          {onPrev && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPrev(); }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-14 p-4 rounded-full text-white/30 hover:text-white/80 transition-colors cursor-pointer"
+              aria-label="Previous"
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+          )}
+          {onNext && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onNext(); }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-14 p-4 rounded-full text-white/30 hover:text-white/80 transition-colors cursor-pointer"
+              aria-label="Next"
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          )}
         </motion.div>
 
-        {/* Right Arrow */}
-        {onNext && (
-          <button
-            onClick={onNext}
-            className="absolute right-6 p-4 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5 transition-all duration-300 active:scale-90 z-[10000] cursor-pointer hidden md:block"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        )}
-
-        {/* Bottom Metadata bar */}
-        <div className="absolute bottom-8 left-6 right-6 flex flex-col md:flex-row items-center justify-between text-zinc-300 z-[10000] gap-4">
-          <div className="flex items-center gap-6 text-sm">
-            {location && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 font-light text-white/80">
-                <MapPin className="w-4 h-4 text-blue-400" />
-                <span>{location}</span>
-              </div>
-            )}
-            {formattedDate && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 font-mono text-xs">
-                <Calendar className="w-4 h-4 text-emerald-400" />
-                <span>{formattedDate}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile swipe helper text */}
-          <span className="text-xs font-mono text-zinc-500 md:hidden">Swipe or tap edges to navigate</span>
-          
-          <div className="text-xs font-mono text-zinc-400 border border-white/5 px-3 py-1 rounded-full bg-white/5 hidden md:block">
-            Use Left / Right Arrows to navigate
-          </div>
-        </div>
+        {/* Close button — fixed at very bottom center, above everything */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ delay: 0.2 }}
+          onClick={onClose}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[10000] flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white/80 hover:text-white text-sm font-medium backdrop-blur-xl transition-all duration-200 cursor-pointer active:scale-95"
+        >
+          <X className="w-4 h-4" />
+          <span className="tracking-wide">Close</span>
+        </motion.button>
       </motion.div>
     </AnimatePresence>
   );
