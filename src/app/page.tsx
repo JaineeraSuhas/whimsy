@@ -75,83 +75,83 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
       {/* Floating background images — absolutely positioned behind text */}
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
         <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
-        {/* Top Left Corner */}
-        <FloatingElement depth={0.5} className="top-[5%] left-[2%] md:top-[8%] md:left-[11%]">
+        {/* Gallery 1 */}
+        <FloatingElement depth={0.5} className="top-[8%] left-[11%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 1"
-            className="w-auto h-20 md:h-24 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[-5deg]"
+            className="w-auto h-20 md:h-24 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Mid-Upper Left */}
-        <FloatingElement depth={1} className="top-[25%] left-[15%] md:top-[10%] md:left-[32%]">
+        {/* Gallery 2 */}
+        <FloatingElement depth={1} className="top-[10%] left-[32%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 2"
-            className="w-auto h-24 md:h-28 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[3deg]"
+            className="w-auto h-24 md:h-28 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Top Right Corner */}
-        <FloatingElement depth={2} className="top-[2%] right-[5%] md:top-[2%] md:left-[53%] md:right-auto">
+        {/* Gallery 3 */}
+        <FloatingElement depth={2} className="top-[2%] left-[53%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
             alt="Gallery 3"
-            className="w-auto h-28 md:h-52 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[6deg]"
+            className="w-auto h-28 md:h-52 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Mid-Upper Right (staggered inwards) */}
-        <FloatingElement depth={1} className="top-[22%] right-[15%] md:top-[0%] md:left-[83%] md:right-auto">
+        {/* Gallery 4 */}
+        <FloatingElement depth={1} className="top-[0%] left-[83%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
             alt="Gallery 4"
-            className="w-auto h-20 md:h-32 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[-4deg]"
+            className="w-auto h-20 md:h-32 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Mid-Lower Left */}
-        <FloatingElement depth={1.5} className="top-[60%] left-[8%] md:top-[40%] md:left-[2%]">
+        {/* Gallery 5 */}
+        <FloatingElement depth={1.5} className="top-[40%] left-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
             alt="Gallery 5"
-            className="w-auto h-24 md:h-36 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[8deg]"
+            className="w-auto h-24 md:h-36 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Bottom Right Corner */}
-        <FloatingElement depth={2} className="bottom-[8%] right-[5%] md:top-[70%] md:left-[77%] md:right-auto md:bottom-auto">
+        {/* Gallery 6 */}
+        <FloatingElement depth={2} className="top-[70%] left-[77%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
             alt="Gallery 6"
-            className="w-auto h-24 md:h-48 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[-6deg]"
+            className="w-auto h-24 md:h-48 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Bottom Left Corner */}
-        <FloatingElement depth={3} className="bottom-[5%] left-[5%] md:top-[73%] md:left-[15%] md:bottom-auto">
+        {/* Gallery 7 */}
+        <FloatingElement depth={3} className="top-[73%] left-[15%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
             alt="Gallery 7"
-            className="w-auto h-28 md:h-64 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[-2deg]"
+            className="w-auto h-28 md:h-64 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 
-        {/* Bottom Mid-Right (staggered) */}
-        <FloatingElement depth={1} className="bottom-[15%] right-[25%] md:top-[80%] md:left-[50%] md:right-auto md:bottom-auto">
+        {/* Gallery 8 */}
+        <FloatingElement depth={1} className="top-[80%] left-[50%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
             alt="Gallery 8"
-            className="w-auto h-20 md:h-32 object-contain md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl rotate-[4deg]"
+            className="w-auto h-20 md:h-32 object-contain hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg shadow-xl"
           />
         </FloatingElement>
 

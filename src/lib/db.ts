@@ -96,12 +96,26 @@ export const savePhoto = async (photo: Photo) => {
 
 export const getAllPhotos = async () => {
   const db = await initDB();
-  return db.getAllFromIndex("photos", "by-date");
+  const photos = await db.getAllFromIndex("photos", "by-date");
+  return photos.map(p => {
+    if (p.faces) {
+      p.faces.forEach(f => {
+        if (f.descriptor) f.descriptor = new Float32Array(f.descriptor);
+      });
+    }
+    return p;
+  });
 };
 
 export const getPhotoById = async (id: string) => {
   const db = await initDB();
-  return db.get("photos", id);
+  const p = await db.get("photos", id);
+  if (p?.faces) {
+    p.faces.forEach(f => {
+      if (f.descriptor) f.descriptor = new Float32Array(f.descriptor);
+    });
+  }
+  return p;
 };
 
 export const deletePhoto = async (id: string) => {
@@ -126,12 +140,18 @@ export const savePerson = async (person: DetectedPerson) => {
 
 export const getAllPeople = async () => {
   const db = await initDB();
-  return db.getAllFromIndex("people", "by-photo-count");
+  const people = await db.getAllFromIndex("people", "by-photo-count");
+  return people.map(p => {
+    if (p.anchors) p.anchors = p.anchors.map(a => new Float32Array(a));
+    return p;
+  });
 };
 
 export const getPersonById = async (id: string) => {
   const db = await initDB();
-  return db.get("people", id);
+  const p = await db.get("people", id);
+  if (p?.anchors) p.anchors = p.anchors.map(a => new Float32Array(a));
+  return p;
 };
 
 export const deletePerson = async (id: string) => {
@@ -155,7 +175,7 @@ export const getPhotosByPerson = async (personId: string) => {
   const db = await initDB();
   const person = await db.get("people", personId);
   if (!person) return [];
-  const allPhotos = await db.getAll("photos");
+  const allPhotos = await getAllPhotos();
   const ids = new Set(person.faceIds);
   return allPhotos.filter((p) => p.faces?.some((f) => ids.has(f.id)));
 };
@@ -164,10 +184,10 @@ export const getPhotosByPeople = async (personIds: string[]) => {
   if (personIds.length === 0) return [];
   const db = await initDB();
 
-  const people = await Promise.all(personIds.map((id) => db.get("people", id)));
+  const people = await Promise.all(personIds.map((id) => getPersonById(id)));
   const targetFaceIds = new Set(people.flatMap((p) => p?.faceIds ?? []));
 
-  const allPhotos = await db.getAll("photos");
+  const allPhotos = await getAllPhotos();
   return allPhotos.filter((photo) =>
     photo.faces?.some((face) => targetFaceIds.has(face.id))
   );

@@ -90,7 +90,7 @@ class UnionFind {
 
 export function clusterFaces(
   allFaces: Map<string, FaceDetection[]>,
-  distanceThreshold = 0.68 // tuned for MediaPipe geometry descriptors
+  distanceThreshold = 0.80 // tuned for MediaPipe geometry descriptors
 ): FaceCluster[] {
   // Flatten into array
   const items: SlimFace[] = [];

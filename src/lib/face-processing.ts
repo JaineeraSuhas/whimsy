@@ -66,6 +66,11 @@ export async function warmupModels(): Promise<void> {
   }
 }
 
+// Auto warmup
+if (typeof window !== "undefined") {
+  warmupModels();
+}
+
 // ─── Queue ────────────────────────────────────────────────────────────────────
 // Collect photos needing detection; flush after a short idle window.
 
@@ -75,7 +80,7 @@ const MAX_CONCURRENT = 2;
 
 function scheduleFlush() {
   if (flushTimer) clearTimeout(flushTimer);
-  flushTimer = setTimeout(flushQueue, 400);
+  flushTimer = setTimeout(flushQueue, 1500);
 }
 
 async function flushQueue() {
