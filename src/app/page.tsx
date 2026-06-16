@@ -272,13 +272,9 @@ export default function Home() {
             className="absolute inset-0"
           >
             {photos.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-[100]">
-                <div className="w-full max-w-2xl bg-[#111] border border-white/10 rounded-3xl p-6 shadow-2xl relative">
-                  <UploadSection onUploadComplete={() => {
-                    fetchPhotos();
-                  }} />
-                </div>
-              </div>
+              <UploadSection onUploadComplete={() => {
+                fetchPhotos();
+              }} />
             ) : layoutMode === 'canvas' ? (
               <InfiniteCanvasView photos={filteredPhotos} />
             ) : (
