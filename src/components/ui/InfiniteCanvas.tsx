@@ -401,21 +401,16 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         const parallaxX = 5 * scroll.current.delta.x.c * item.ease + (mouse.current.x.c - 0.5) * item.width * 0.6 * parallaxMultiplier;
         const parallaxY = 5 * scroll.current.delta.y.c * item.ease + (mouse.current.y.c - 0.5) * item.height * 0.6 * parallaxMultiplier;
 
-        const posX = item.x + scrollX + item.extraX + parallaxX;
-        const posY = item.y + scrollY + item.extraY + parallaxY;
+        const rawX = item.x + scrollX;
+        const rawY = item.y + scrollY;
 
-        const beforeX = posX > parentW;
-        const afterX = posX + item.width < 0;
-        const beforeY = posY > parentH;
-        const afterY = posY + item.height < 0;
+        const wrap = (min: number, max: number, v: number) => {
+          const range = max - min;
+          return ((((v - min) % range) + range) % range) + min;
+        };
 
-        if (dirX === "right" && beforeX) item.extraX -= tileW;
-        if (dirX === "left" && afterX) item.extraX += tileW;
-        if (dirY === "down" && beforeY) item.extraY -= tileH;
-        if (dirY === "up" && afterY) item.extraY += tileH;
-
-        const finalX = item.x + scrollX + item.extraX + parallaxX;
-        const finalY = item.y + scrollY + item.extraY + parallaxY;
+        const finalX = wrap(-parentW, 2 * parentW, rawX) + parallaxX;
+        const finalY = wrap(-parentH, 2 * parentH, rawY) + parallaxY;
 
         const absFinalX = finalX + parentRect.left;
         const absFinalY = finalY + parentRect.top;
