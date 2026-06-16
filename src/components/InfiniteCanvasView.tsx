@@ -99,8 +99,9 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const W = dimensions.w;
     const H = dimensions.h;
 
-    // Ensure we always have at least one full tile (9 slots) to prevent sparse gaps
-    const minimumSlots = REFERENCE_LAYOUT.length;
+    // Enforce a large logical block (e.g., 4x4 tiles = 16 tiles) to completely hide repeating clone patterns
+    const minimumTiles = 16;
+    const minimumSlots = minimumTiles * REFERENCE_LAYOUT.length;
     const slotsToFill = Math.max(photos.length, minimumSlots);
     // Round up to the nearest full tile so the grid is always complete
     const totalSlots = Math.ceil(slotsToFill / REFERENCE_LAYOUT.length) * REFERENCE_LAYOUT.length;
@@ -108,6 +109,18 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const displayPhotos = [];
     for (let i = 0; i < totalSlots; i++) {
       displayPhotos.push(photos[i % photos.length]);
+    }
+
+    // Seeded pseudo-random shuffle to prevent adjacent identical photos
+    let seed = 12345;
+    const random = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+    
+    for (let i = displayPhotos.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [displayPhotos[i], displayPhotos[j]] = [displayPhotos[j], displayPhotos[i]];
     }
 
     const totalTiles = Math.max(1, Math.ceil(displayPhotos.length / REFERENCE_LAYOUT.length));

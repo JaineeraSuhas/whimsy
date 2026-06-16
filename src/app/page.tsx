@@ -463,15 +463,7 @@ export default function Home() {
                   onClick={() => setLayoutMode(m as typeof layoutMode)}
                   className={`py-6 rounded-3xl text-[10px] uppercase font-black tracking-widest border transition-all flex flex-col items-center justify-center gap-3 ${layoutMode === m ? 'bg-white text-black border-white shadow-xl scale-105' : 'bg-white/5 text-white/40 border-white/10'}`}
                 >
-                  <span className="text-base">
-                    {m === 'canvas' && '🖼️'}
-                    {m === 'spiral' && '🌀'}
-                    {m === 'sphere' && '🌐'}
-                    {m === 'particles' && '✨'}
-                    {m === 'wave' && '〰️'}
-                    {m === 'helix' && '🧬'}
-                    {m === 'cylinder' && '🥫'}
-                  </span>
+
                   {m}
                 </button>
               ))}
