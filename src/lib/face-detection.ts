@@ -62,7 +62,7 @@ export async function loadFaceDetectionModel(): Promise<void> {
           delegate: "GPU", // Falls back to CPU automatically
         },
         runningMode: "IMAGE",
-        minDetectionConfidence: 0.45,
+        minDetectionConfidence: 0.2,
         minSuppressionThreshold: 0.3,
       }),
       FaceLandmarker.createFromOptions(vision, {
@@ -73,9 +73,9 @@ export async function loadFaceDetectionModel(): Promise<void> {
         },
         runningMode: "IMAGE",
         numFaces: 10,
-        minFaceDetectionConfidence: 0.4,
-        minFacePresenceConfidence: 0.4,
-        minTrackingConfidence: 0.4,
+        minFaceDetectionConfidence: 0.2,
+        minFacePresenceConfidence: 0.2,
+        minTrackingConfidence: 0.2,
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false,
       }),

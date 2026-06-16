@@ -101,14 +101,14 @@ export default function Lightbox({
           )}
         </motion.div>
 
-        {/* Close button — fixed at middle right, away from photos */}
+        {/* Close button — fixed at top right to avoid Next arrow collision */}
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ delay: 0.1 }}
           onClick={onClose}
-          className="fixed top-1/2 -translate-y-1/2 right-4 md:right-8 z-[10000] p-4 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 text-white transition-all duration-200 cursor-pointer active:scale-95 shadow-2xl backdrop-blur-xl"
+          className="fixed top-4 right-4 md:top-8 md:right-8 z-[10000] p-4 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 text-white transition-all duration-200 cursor-pointer active:scale-95 shadow-2xl backdrop-blur-xl"
         >
           <X className="w-6 h-6 md:w-8 md:h-8" />
         </motion.button>

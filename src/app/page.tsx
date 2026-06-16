@@ -66,7 +66,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         </div>
         <button
           onClick={handleEnter}
-          className="relative z-10 mt-32 md:mt-16 flex items-center justify-center overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-xl px-6 py-2.5 text-[10px] md:text-xs font-medium tracking-[0.2em] text-white/90 transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 uppercase shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+          className="relative z-10 mt-32 md:mt-16 flex items-center justify-center overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-xl px-6 py-2.5 text-[10px] md:text-xs font-medium tracking-[0.2em] text-white/90 transition-all hover:bg-white hover:text-black md:hover:scale-105 active:scale-95 active:scale-95 uppercase shadow-[0_0_40px_rgba(255,255,255,0.1)]"
         >
           ENTER ARENA
         </button>
@@ -75,87 +75,87 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
       {/* Floating background images — absolutely positioned behind text */}
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
         <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
-        <FloatingElement depth={0.5} className="top-[8%] left-[8%]">
+        <FloatingElement depth={0.5} className="top-[8%] left-[2%] md:left-[8%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 1"
-            className="w-36 h-36 md:w-24 md:h-24 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-36 h-36 md:w-24 md:h-24 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[5%] left-[35%]">
+        <FloatingElement depth={1} className="top-[2%] left-[45%] md:left-[35%] hidden md:block">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 2"
-            className="w-48 h-48 md:w-28 md:h-28 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-48 md:w-28 md:h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={2} className="top-[2%] left-[65%]">
+        <FloatingElement depth={2} className="top-[-2%] left-[75%] md:left-[65%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[2]}
             alt="Gallery 3"
-            className="w-64 h-80 md:w-40 md:h-52 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-64 md:w-40 md:h-52 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[0%] left-[85%]">
+        <FloatingElement depth={1} className="top-[25%] left-[82%] md:left-[85%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
             alt="Gallery 4"
-            className="w-40 h-40 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-36 h-36 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
 
-        <FloatingElement depth={1.5} className="top-[45%] left-[2%]">
+        <FloatingElement depth={1.5} className="top-[35%] left-[-8%] md:left-[2%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[4]}
             alt="Gallery 5"
-            className="w-52 h-52 md:w-36 md:h-36 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-44 h-44 md:w-36 md:h-36 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={0.8} className="top-[40%] left-[88%]">
+        <FloatingElement depth={0.8} className="top-[55%] left-[85%] md:left-[88%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[0]}
             alt="Gallery 9"
-            className="w-44 h-44 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-36 h-36 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
 
-        <FloatingElement depth={2} className="top-[75%] left-[80%]">
+        <FloatingElement depth={2} className="top-[75%] left-[72%] md:left-[80%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[7]}
             alt="Gallery 6"
-            className="w-56 h-56 md:w-36 md:h-48 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-48 md:w-36 md:h-48 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
 
-        <FloatingElement depth={3} className="top-[80%] left-[10%]">
+        <FloatingElement depth={3} className="top-[80%] left-[5%] md:left-[10%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[5]}
             alt="Gallery 7"
-            className="w-72 h-80 md:w-52 md:h-full object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-64 md:w-52 md:h-full object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1} className="top-[85%] left-[55%]">
+        <FloatingElement depth={1} className="top-[85%] left-[45%] md:left-[55%] hidden md:block">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
             alt="Gallery 8"
-            className="w-48 h-48 md:w-32 md:h-32 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-48 h-48 md:w-32 md:h-32 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
-        <FloatingElement depth={1.2} className="top-[82%] left-[35%]">
+        <FloatingElement depth={1.2} className="top-[82%] left-[35%] hidden md:block">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[1]}
             alt="Gallery 10"
-            className="w-40 h-40 md:w-28 md:h-28 object-cover hover:scale-105 duration-200 cursor-pointer transition-transform rounded-lg"
+            className="w-40 h-40 md:w-28 md:h-28 object-cover md:hover:scale-105 active:scale-95 duration-200 cursor-pointer transition-transform rounded-lg"
           />
         </FloatingElement>
         </Floating>
@@ -264,14 +264,22 @@ export default function Home() {
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
           <motion.div
-            key={layoutMode}
+            key={photos.length === 0 ? 'empty' : layoutMode}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0"
           >
-            {layoutMode === 'canvas' ? (
+            {photos.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-[100]">
+                <div className="w-full max-w-2xl bg-[#111] border border-white/10 rounded-3xl p-6 shadow-2xl relative">
+                  <UploadSection onUploadComplete={() => {
+                    fetchPhotos();
+                  }} />
+                </div>
+              </div>
+            ) : layoutMode === 'canvas' ? (
               <InfiniteCanvasView photos={filteredPhotos} />
             ) : (
               <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={false} />
@@ -459,11 +467,8 @@ export default function Home() {
                 people={people}
                 selectedPersonIds={selectedPersonIds}
                 onSelectPerson={(id) => {
-                  setSelectedPersonIds(prev =>
-                    prev.includes(id)
-                      ? prev.filter(p => p !== id)
-                      : [...prev, id]
-                  );
+                  setSelectedPersonIds([id]);
+                  setShowPeopleModal(false);
                 }}
                 onUpdateName={async (id, name) => {
                   await updatePersonName(id, name);
@@ -474,7 +479,7 @@ export default function Home() {
 
             <button
               onClick={() => setShowPeopleModal(false)}
-              className="mt-12 px-12 py-4 rounded-full bg-white text-black font-extrabold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
+              className="mt-12 px-12 py-4 rounded-full bg-white text-black font-extrabold text-sm shadow-2xl md:hover:scale-105 active:scale-95 transition-all mb-12"
             >
               DONE
             </button>
