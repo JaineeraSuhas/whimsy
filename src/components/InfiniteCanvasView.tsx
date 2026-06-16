@@ -50,47 +50,15 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
   // Generate object URLs from thumbnail blobs
   const urlMapRef = useRef<Map<string, string>>(new Map());
 
-  useEffect(() => {
-    const currentMap = urlMapRef.current;
-    const currentIds = new Set(photos.map((p) => p.id));
-
-    currentMap.forEach((url, id) => {
-      if (!currentIds.has(id)) {
-        URL.revokeObjectURL(url);
-        currentMap.delete(id);
-      }
-    });
-
-    photos.forEach((photo) => {
-      if (!currentMap.has(photo.id)) {
-        try {
-          const blobToUse = photo.thumbnail || photo.blob;
-          const url = URL.createObjectURL(blobToUse);
-          currentMap.set(photo.id, url);
-        } catch (err) {
-          console.error('Failed to create object URL for photo', photo.id, err);
-        }
-      }
-    });
-  }, [photos]);
-
-  const fullResUrls = useMemo(() => {
-    const urls: Record<string, string> = {};
-    photos.forEach((photo) => {
-      try {
-        urls[photo.id] = URL.createObjectURL(photo.blob);
-      } catch { /* ignore */ }
-    });
-    return urls;
-  }, [photos]);
-
+  // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
-      Object.values(fullResUrls).forEach((url) => {
+      urlMapRef.current.forEach((url) => {
         try { URL.revokeObjectURL(url); } catch { /* ignore */ }
       });
+      urlMapRef.current.clear();
     };
-  }, [fullResUrls]);
+  }, []);
 
   // Compute deterministic scattered layout for cards — matching the reference site style
   const layoutData = useMemo(() => {
@@ -98,6 +66,19 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
     const W = dimensions.w;
     const H = dimensions.h;
+
+    // Synchronously generate URLs if they don't exist
+    photos.forEach((photo) => {
+      if (!urlMapRef.current.has(photo.id)) {
+        try {
+          const blobToUse = photo.thumbnail || photo.blob;
+          const url = URL.createObjectURL(blobToUse);
+          urlMapRef.current.set(photo.id, url);
+        } catch (err) {
+          console.error('Failed to create object URL for photo', photo.id, err);
+        }
+      }
+    });
 
     // Ensure we always have at least a massive grid (e.g., 4x4 tiles = 16 tiles) to completely hide repeating clone patterns
     const minimumTiles = 16;
@@ -305,7 +286,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
         {activeCard && (
           <Lightbox
             photo={activeCard.photo}
-            imageUrl={fullResUrls[activeCard.photo.id] || activeCard.imageUrl}
+            imageUrl={activeCard.imageUrl}
             onClose={() => setActivePhotoIndex(null)}
             onNext={
               activePhotoIndex !== null && activePhotoIndex < layoutData.cards.length - 1

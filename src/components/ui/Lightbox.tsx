@@ -101,17 +101,16 @@ export default function Lightbox({
           )}
         </motion.div>
 
-        {/* Close button — fixed at very bottom center, above everything */}
+        {/* Close button — fixed at top right, above everything */}
         <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ delay: 0.2 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ delay: 0.1 }}
           onClick={onClose}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[10000] flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white/80 hover:text-white text-sm font-medium backdrop-blur-xl transition-all duration-200 cursor-pointer active:scale-95"
+          className="fixed top-6 right-6 md:top-8 md:right-8 z-[10000] p-3 rounded-full bg-black/40 hover:bg-black/80 border border-white/10 text-white transition-all duration-200 cursor-pointer active:scale-95 shadow-xl backdrop-blur-xl"
         >
-          <X className="w-4 h-4" />
-          <span className="tracking-wide">Close</span>
+          <X className="w-6 h-6" />
         </motion.button>
       </motion.div>
     </AnimatePresence>

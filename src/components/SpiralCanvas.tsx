@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { getAllPhotos, Photo } from '@/lib/db';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, Sparkles, Waves, Dna, Cylinder, Settings } from 'lucide-react';
+import Lightbox from '@/components/ui/Lightbox';
 
 const seededRandom = (seed: number) => {
     const x = Math.sin(seed) * 10000;
@@ -341,6 +342,17 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
 function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layoutMode: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', isPaused: boolean }) {
     const { camera, viewport } = useThree();
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+    const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!selectedPhoto) {
+            setSelectedPhotoUrl(null);
+            return;
+        }
+        const url = URL.createObjectURL(selectedPhoto.blob);
+        setSelectedPhotoUrl(url);
+        return () => URL.revokeObjectURL(url);
+    }, [selectedPhoto]);
 
     // Smooth layout transitions could be added here with spring, but direct switch for now
     const layoutItems = useMemo(() => getLayoutPositions(photos, layoutMode, { width: viewport.width, height: viewport.height }), [photos, layoutMode, viewport]);
@@ -361,17 +373,15 @@ function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layout
                 ))}
             </group>
 
-            {/* Selected Photo Overlay */}
-            {selectedPhoto && (
+            {/* Selected Photo Overlay using Lightbox */}
+            {selectedPhoto && selectedPhotoUrl && (
                 <Html fullscreen style={{ pointerEvents: 'none' }}>
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-auto bg-black/80 backdrop-blur-md z-50 animate-in fade-in duration-200" onClick={() => setSelectedPhoto(null)}>
-                        <img
-                            src={URL.createObjectURL(selectedPhoto.blob)}
-                            className="max-h-[85vh] max-w-[85vw] shadow-2xl rounded-lg border border-white/10"
+                    <div className="absolute inset-0 pointer-events-auto">
+                        <Lightbox
+                            photo={selectedPhoto}
+                            imageUrl={selectedPhotoUrl}
+                            onClose={() => setSelectedPhoto(null)}
                         />
-                        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/80 font-mono text-xs tracking-widest uppercase">
-                            {new Date(selectedPhoto.metadata.date).toLocaleDateString()}
-                        </div>
                     </div>
                 </Html>
             )}

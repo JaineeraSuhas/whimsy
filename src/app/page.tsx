@@ -240,11 +240,22 @@ export default function Home() {
 
       {/* Main View Area (Infinite Canvas or 3D Spatial layouts) */}
       <div className="absolute inset-0 z-0">
-        {layoutMode === 'canvas' ? (
-          <InfiniteCanvasView photos={filteredPhotos} />
-        ) : (
-          <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={showUpload || photos.length === 0} />
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={layoutMode}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0"
+          >
+            {layoutMode === 'canvas' ? (
+              <InfiniteCanvasView photos={filteredPhotos} />
+            ) : (
+              <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={showUpload || photos.length === 0} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Desktop HUD / Controls Overlay - Left side, hidden on mobile */}
