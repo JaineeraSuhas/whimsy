@@ -36,13 +36,16 @@ export const useMousePositionRef = (
         const updatePosition = (x: number, y: number) => {
             if (containerRef && containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
-                const relativeX = x - rect.left;
-                const relativeY = y - rect.top;
+                const relativeX = x - rect.left - (rect.width / 2);
+                const relativeY = y - rect.top - (rect.height / 2);
 
                 // Calculate relative position even when outside the container
                 positionRef.current = { x: relativeX, y: relativeY };
             } else {
-                positionRef.current = { x, y };
+                positionRef.current = { 
+                    x: x - window.innerWidth / 2, 
+                    y: y - window.innerHeight / 2 
+                };
             }
         };
 
@@ -77,18 +80,34 @@ export const useMousePositionRef = (
         const isDesktop = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
         if (isDesktop) {
             window.addEventListener("mousemove", handleMouseMove);
+        } else {
+            // On mobile, attach touchmove so swiping on the screen pans the parallax 
+            // even before gyro permission is granted!
+            window.addEventListener("touchmove", handleTouchMove, { passive: true });
         }
 
         // On mobile, rely ONLY on device orientation. Attach immediately (works on Android).
-        // iOS 13+ requires requestPermission via user interaction, handled separately.
-        console.log('[Tilt] Attaching deviceorientation listener');
+        // iOS 13+ requires requestPermission via user interaction.
         window.addEventListener("deviceorientation", handleDeviceOrientation);
+
+        // To seamlessly enable tilt on iOS, attach a one-time touch listener to the document
+        // to request permission upon their very first interaction.
+        const handleFirstTouch = () => {
+            if (!permissionGranted) {
+                requestAccess();
+            }
+            document.removeEventListener('touchstart', handleFirstTouch);
+        };
+        document.addEventListener('touchstart', handleFirstTouch, { once: true });
 
         return () => {
             if (isDesktop) {
                 window.removeEventListener("mousemove", handleMouseMove);
+            } else {
+                window.removeEventListener("touchmove", handleTouchMove);
             }
             window.removeEventListener("deviceorientation", handleDeviceOrientation);
+            document.removeEventListener('touchstart', handleFirstTouch);
         };
     }, [containerRef, permissionGranted]);
 
