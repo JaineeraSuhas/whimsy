@@ -106,7 +106,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         </FloatingElement>
 
         {/* Gallery 4 */}
-        <FloatingElement depth={1} className="top-[0%] left-[83%]">
+        <FloatingElement depth={1} className="top-[25%] left-[40%] md:top-[0%] md:left-[83%]">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[3]}
@@ -146,7 +146,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
         </FloatingElement>
 
         {/* Gallery 8 */}
-        <FloatingElement depth={1} className="top-[80%] left-[50%]">
+        <FloatingElement depth={1} className="top-[28%] right-[8%] md:top-[80%] md:left-[50%] md:right-auto">
           <motion.img
             initial={{ opacity: 0 }}
             src={exampleImages[6]}
