@@ -55,20 +55,21 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
     >
       {/* Center content — always on top */}
       <motion.div
-        className="relative z-50 text-center flex flex-col items-center justify-center"
+        className="relative z-50 text-center flex flex-col items-center justify-center space-y-10"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.88, delay: 1.5 }}
       >
-        <div className="text-5xl md:text-7xl text-white font-bold italic tracking-tight">
+        <div className="relative z-0 text-5xl md:text-7xl text-white font-bold italic tracking-tight">
           <StandText text="whimsy." />
         </div>
-        <p
+        <button
           onClick={handleEnter}
-          className="absolute -bottom-32 text-xs hover:scale-110 transition-transform bg-white text-black rounded-full py-3 px-8 cursor-pointer font-bold tracking-widest shadow-xl shadow-white/10"
+          className="relative z-10 flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-6 py-2 text-xs font-medium text-white/90 transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95"
         >
-          ENTER ARENA
-        </p>
+          <span>Enter Arena</span>
+          <div className="h-1.5 w-1.5 rounded-full bg-white opacity-70" />
+        </button>
       </motion.div>
 
       {/* Floating background images — absolutely positioned behind text */}
