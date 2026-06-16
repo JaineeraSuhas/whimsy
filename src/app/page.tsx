@@ -390,21 +390,7 @@ export default function Home() {
               <span className="hidden md:inline text-sm font-semibold">Add Photos</span>
             </UploadDropzone>
 
-            {/* Desktop-only secondary filter */}
-            <div className="hidden md:flex items-center gap-1 p-1 rounded-full bg-black/40 backdrop-blur-xl border border-white/5">
-              <button
-                onClick={handleLibraryClick}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${filterMode === 'all' ? 'bg-white text-black' : 'text-white/40 hover:text-white/60'}`}
-              >
-                LIBRARY
-              </button>
-              <button
-                onClick={() => setFilterMode('people')}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${filterMode === 'people' ? 'bg-white text-black' : 'text-white/40 hover:text-white/60'}`}
-              >
-                PEOPLE
-              </button>
-            </div>
+
           </motion.div>
         </div>
       </div>
