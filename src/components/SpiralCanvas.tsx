@@ -120,7 +120,7 @@ class TextureLoaderSystem {
     }
 }
 
-function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number, layoutMode: string }) {
+function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPaused }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number, layoutMode: string, isPaused: boolean }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(() => GlobalTextureCache.get(photo.id) || null);
     const [isLoading, setIsLoading] = useState(!GlobalTextureCache.get(photo.id));
@@ -172,6 +172,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
     }, [photo.id, photo.thumbnail, texture, gl]);
 
     useFrame((state) => {
+        if (isPaused) return; // Completely freeze animations when uploading to save battery/resources
         if (meshRef.current) {
             // Enhanced floating for particles
             if (layoutMode === 'particles') {
@@ -226,7 +227,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
                 </mesh>
             )}
 
-            {/* Main Photo Mesh - only visible when texture exists */}
+            {/* Main Photo Mesh - opaque to fix massive overdraw/lag on mobile */}
             {texture && !hasError && (
                 <mesh
                     ref={meshRef}
@@ -237,7 +238,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode }: { 
                     <planeGeometry args={[width, height]} />
                     <meshBasicMaterial
                         map={texture}
-                        transparent={true}
+                        transparent={false}
                         side={THREE.DoubleSide}
                         toneMapped={false}
                     />
@@ -337,7 +338,7 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
     });
 }
 
-function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder' }) {
+function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layoutMode: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', isPaused: boolean }) {
     const { camera, viewport } = useThree();
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
@@ -346,7 +347,7 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'glo
 
     return (
         <>
-            <OrbitControls enableDamping dampingFactor={0.05} autoRotate={true} autoRotateSpeed={0.5} />
+            <OrbitControls enableDamping dampingFactor={0.05} autoRotate={!isPaused} autoRotateSpeed={0.5} enabled={!isPaused} />
 
             <group>
                 {layoutItems.map((item) => (
@@ -355,6 +356,7 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'glo
                         {...item}
                         layoutMode={layoutMode}
                         onClick={setSelectedPhoto}
+                        isPaused={isPaused}
                     />
                 ))}
             </group>
@@ -380,9 +382,10 @@ function SpiralScene({ photos, layoutMode }: { photos: Photo[], layoutMode: 'glo
 interface SpiralCanvasProps {
     photos: Photo[];
     layoutMode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder';
+    isPaused?: boolean;
 }
 
-export default function SpiralCanvas({ photos, layoutMode }: SpiralCanvasProps) {
+export default function SpiralCanvas({ photos, layoutMode, isPaused = false }: SpiralCanvasProps) {
     if (photos.length === 0) {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center text-neutral-400 gap-4">
@@ -396,11 +399,15 @@ export default function SpiralCanvas({ photos, layoutMode }: SpiralCanvasProps) 
 
     return (
         <div className="w-full h-full relative">
-            <Canvas camera={{ position: [0, 0, 40], fov: 60 }} gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
+            <Canvas 
+                camera={{ position: [0, 0, 40], fov: 60 }} 
+                gl={{ alpha: true, antialias: false, powerPreference: "high-performance" }}
+                dpr={[1, 1.5]}
+            >
                 <ambientLight intensity={1.5} />
                 <pointLight position={[10, 10, 10]} intensity={1.5} />
                 <pointLight position={[-10, -10, -10]} intensity={0.5} />
-                <SpiralScene photos={photos} layoutMode={layoutMode} />
+                <SpiralScene photos={photos} layoutMode={layoutMode} isPaused={isPaused} />
             </Canvas>
         </div>
     );

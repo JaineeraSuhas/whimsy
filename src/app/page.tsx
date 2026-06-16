@@ -242,7 +242,7 @@ export default function Home() {
         {layoutMode === 'canvas' ? (
           <InfiniteCanvasView photos={filteredPhotos} />
         ) : (
-          <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} />
+          <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={showUpload || photos.length === 0} />
         )}
       </div>
 
