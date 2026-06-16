@@ -99,15 +99,25 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const W = dimensions.w;
     const H = dimensions.h;
 
-    // We tile the REFERENCE_LAYOUT based on how many photos we have
-    const totalTiles = Math.max(1, Math.ceil(photos.length / REFERENCE_LAYOUT.length));
+    // Ensure we always have at least one full tile (9 slots) to prevent sparse gaps
+    const minimumSlots = REFERENCE_LAYOUT.length;
+    const slotsToFill = Math.max(photos.length, minimumSlots);
+    // Round up to the nearest full tile so the grid is always complete
+    const totalSlots = Math.ceil(slotsToFill / REFERENCE_LAYOUT.length) * REFERENCE_LAYOUT.length;
+
+    const displayPhotos = [];
+    for (let i = 0; i < totalSlots; i++) {
+      displayPhotos.push(photos[i % photos.length]);
+    }
+
+    const totalTiles = Math.max(1, Math.ceil(displayPhotos.length / REFERENCE_LAYOUT.length));
     const tileCols = Math.ceil(Math.sqrt(totalTiles));
     
     // Condense the layout to fit 9 images tightly on one screen with slight edge overlap
     const tileW = Math.max(1000, W * 1.05);
     const tileH = Math.max(700, H * 1.05);
 
-    const computedCards = photos.map((photo, index) => {
+    const computedCards = displayPhotos.map((photo, index) => {
       const patternIdx = index % REFERENCE_LAYOUT.length;
       const tileIdx = Math.floor(index / REFERENCE_LAYOUT.length);
       const tileRow = Math.floor(tileIdx / tileCols);
@@ -209,7 +219,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
       >
         {layoutData.cards.map((card) => (
           <div
-            key={card.photo.id}
+            key={`${card.photo.id}-${card.index}`}
             className="absolute"
             style={{
               left: `${card.left}px`,
