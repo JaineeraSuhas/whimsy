@@ -333,8 +333,13 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         mouse.current.y.t = touch.clientY / winH.current;
         const dx = touch.clientX - drag.current.startX;
         const dy = touch.clientY - drag.current.startY;
-        scroll.current.target.x = drag.current.scrollX + dx * internalDragSpeed;
-        scroll.current.target.y = drag.current.scrollY + dy * internalDragSpeed;
+        
+        // On mobile, direct 1:1 manipulation often feels heavy.
+        // We boost the touch delta slightly (1.5x) so it feels lighter and effortless.
+        const mobileDragMultiplier = 1.5; 
+        
+        scroll.current.target.x = drag.current.scrollX + dx * internalDragSpeed * mobileDragMultiplier;
+        scroll.current.target.y = drag.current.scrollY + dy * internalDragSpeed * mobileDragMultiplier;
       }
     };
 

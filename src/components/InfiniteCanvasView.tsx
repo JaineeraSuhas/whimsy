@@ -96,8 +96,12 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
       }
     });
 
-    // Ensure we always have at least a massive grid (e.g., 4x4 tiles = 16 tiles) to completely hide repeating clone patterns
-    const minimumTiles = 16;
+    // We only need enough tiles to cover the viewport once (with some buffer).
+    // InfiniteCanvas will automatically clone these to create the infinite 3x3 quadrant illusion.
+    // 4 tiles (2x2) is ~2000x1400px which is plenty for desktop, and 1 or 2 is enough for mobile.
+    // By reducing from 16 to 4, we reduce DOM elements from 1296 to 324, fixing the mobile scroll lag!
+    const isMobile = W < 768;
+    const minimumTiles = isMobile ? 2 : 4;
     const minimumSlots = minimumTiles * REFERENCE_LAYOUT.length;
     const slotsToFill = Math.max(photos.length, minimumSlots);
     // Round up to the nearest full tile so the grid is always complete

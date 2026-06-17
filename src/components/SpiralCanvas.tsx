@@ -122,7 +122,7 @@ class TextureLoaderSystem {
 }
 
 function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPaused }: { photo: Photo, position: [number, number, number], rotation: [number, number, number], onClick: (p: Photo) => void, index: number, layoutMode: string, isPaused: boolean }) {
-    const meshRef = useRef<THREE.Mesh>(null);
+    const groupRef = useRef<THREE.Group>(null);
     const [texture, setTexture] = useState<THREE.Texture | null>(() => GlobalTextureCache.get(photo.id) || null);
     const [isLoading, setIsLoading] = useState(!GlobalTextureCache.get(photo.id));
     const [hasError, setHasError] = useState(false);
@@ -174,41 +174,42 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
 
     useFrame((state) => {
         if (isPaused) return; // Completely freeze animations when uploading to save battery/resources
-        if (meshRef.current) {
+        if (groupRef.current) {
             if (layoutMode === 'particles') {
                 // Float up and down
-                meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
+                groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
                 // Gentle rotation
-                meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
+                groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
                 // Look at camera for particles to make them engaging
-                meshRef.current.lookAt(camera.position);
+                groupRef.current.lookAt(camera.position);
             } else if (layoutMode === 'snowfall') {
                 const isMobile = window.innerWidth < 768;
                 const bounds = isMobile ? 120 : 180;
                 
                 // Fall continuously
-                meshRef.current.position.y -= driftSpeed * 0.6;
+                groupRef.current.position.y -= driftSpeed * 0.6;
                 
                 // Wrap around when falling out of bounds
-                const globalY = position[1] + meshRef.current.position.y;
+                const globalY = position[1] + groupRef.current.position.y;
                 if (globalY < -bounds / 2) {
-                    meshRef.current.position.y = (bounds / 2) - position[1];
+                    groupRef.current.position.y = (bounds / 2) - position[1];
                 }
                 
                 // Gentle horizontal sway
-                meshRef.current.position.x = Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
+                groupRef.current.position.x = position[0] + Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
                 // Gentle rotation
-                meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
+                groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
                 // Face camera
-                meshRef.current.lookAt(camera.position);
+                groupRef.current.lookAt(camera.position);
             } else {
                 // Standard subtle float for other modes
                 // Reset rotation caused by lookAt to ensure flat alignment with group
-                meshRef.current.rotation.set(0, 0, 0);
+                groupRef.current.rotation.set(rotation[0], rotation[1], rotation[2]);
 
                 // Add standard subtle float
-                meshRef.current.position.x = 0; // Reset X in case we switched from snowfall
-                meshRef.current.position.y = Math.sin(state.clock.elapsedTime + position[0]) * 0.1; // Reduced float amplitude
+                groupRef.current.position.x = position[0]; 
+                groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + position[0]) * 0.1; 
+                groupRef.current.position.z = position[2];
             }
         }
     });
@@ -219,7 +220,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
     const width = height * aspect;
 
     return (
-        <group position={position} rotation={rotation}>
+        <group ref={groupRef} position={position} rotation={rotation}>
             {/* PROGRESSIVE HYDRA LOADING: Show glass placeholder until texture is ready */}
             {isLoading && (
                 <mesh>
@@ -246,7 +247,6 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
             {/* Main Photo Mesh - opaque to fix massive overdraw/lag on mobile */}
             {texture && !hasError && (
                 <mesh
-                    ref={meshRef}
                     onClick={(e) => { e.stopPropagation(); onClick(photo); }}
                     onPointerOver={() => { document.body.style.cursor = 'pointer'; setHovered(true); }}
                     onPointerOut={() => { document.body.style.cursor = 'default'; setHovered(false); }}
@@ -261,11 +261,11 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
                 </mesh>
             )}
 
-            {/* Border / Frame */}
-            {layoutMode !== 'snowfall' && (
-                <mesh position={[0, 0, -0.01]}>
-                    <planeGeometry args={[width + 0.1, height + 0.1]} />
-                    <meshBasicMaterial color={hovered ? "#FF4D00" : "#FFFFFF"} opacity={0.3} transparent />
+            {/* Hover Highlight (Only when hovered, replacing the ghost duplicate) */}
+            {hovered && (
+                <mesh position={[0, 0, -0.02]}>
+                    <planeGeometry args={[width + 0.3, height + 0.3]} />
+                    <meshBasicMaterial color="#FF4D00" opacity={0.8} transparent />
                 </mesh>
             )}
         </group>
