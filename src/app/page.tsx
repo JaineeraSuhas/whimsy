@@ -627,7 +627,7 @@ export default function Home() {
       />
       
       {/* Upper Layer Reveal Card (Bottom Right) */}
-      <div className="absolute bottom-24 right-4 md:bottom-8 md:right-8 z-[999] pointer-events-auto">
+      <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[9999] pointer-events-auto">
         <RevealCard />
       </div>
               </>

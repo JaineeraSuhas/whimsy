@@ -58,6 +58,7 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
 
   const isDragging = useRef(false);
   const drag = useRef({ startX: 0, startY: 0, scrollX: 0, scrollY: 0 });
+  const touchVelocity = useRef({ x: 0, y: 0, time: 0, lastX: 0, lastY: 0 });
   const mouse = useRef({ x: { t: 0.5, c: 0.5 }, y: { t: 0.5, c: 0.5 }, press: { t: 0, c: 0 } });
 
   const winW = useRef(typeof window !== "undefined" ? window.innerWidth : 1920);
@@ -317,18 +318,47 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         drag.current.startY = touch.clientY;
         drag.current.scrollX = scroll.current.target.x;
         drag.current.scrollY = scroll.current.target.y;
+        
+        // Reset velocity tracker
+        touchVelocity.current = {
+          x: 0, y: 0, 
+          time: performance.now(), 
+          lastX: touch.clientX, 
+          lastY: touch.clientY 
+        };
       }
     };
 
     const handleTouchEnd = () => {
       isDragging.current = false;
       mouse.current.press.t = 0;
+      
+      // Apply momentum from velocity
+      const momentumMultiplier = 180; // Distance multiplier for the throw
+      scroll.current.target.x += touchVelocity.current.x * momentumMultiplier;
+      scroll.current.target.y += touchVelocity.current.y * momentumMultiplier;
+      
+      // Clear velocity to avoid compounding
+      touchVelocity.current.x = 0;
+      touchVelocity.current.y = 0;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 1 && isDragging.current) {
         e.preventDefault();
         const touch = e.touches[0];
+        
+        // Calculate Velocity
+        const now = performance.now();
+        const dt = now - touchVelocity.current.time;
+        if (dt > 0) {
+           touchVelocity.current.x = (touch.clientX - touchVelocity.current.lastX) / dt;
+           touchVelocity.current.y = (touch.clientY - touchVelocity.current.lastY) / dt;
+        }
+        touchVelocity.current.time = now;
+        touchVelocity.current.lastX = touch.clientX;
+        touchVelocity.current.lastY = touch.clientY;
+
         mouse.current.x.t = touch.clientX / winW.current;
         mouse.current.y.t = touch.clientY / winH.current;
         const dx = touch.clientX - drag.current.startX;
