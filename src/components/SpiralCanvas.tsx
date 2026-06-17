@@ -5,7 +5,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getAllPhotos, Photo } from '@/lib/db';
-import { CircleMenu } from '@/components/ui/circle-menu';
 import { Grid3x3, Circle, Sparkles, Waves, Dna, Cylinder, Settings } from 'lucide-react';
 import Lightbox from '@/components/ui/Lightbox';
 
@@ -258,14 +257,6 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
                         side={THREE.DoubleSide}
                         toneMapped={false}
                     />
-                </mesh>
-            )}
-
-            {/* Hover Highlight (Only when hovered, replacing the ghost duplicate) */}
-            {hovered && (
-                <mesh position={[0, 0, -0.02]}>
-                    <planeGeometry args={[width + 0.3, height + 0.3]} />
-                    <meshBasicMaterial color="#FF4D00" opacity={0.8} transparent />
                 </mesh>
             )}
         </group>
