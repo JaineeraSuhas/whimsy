@@ -112,23 +112,19 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
       return seed / 233280;
     };
     
-    const shuffleArray = (arr: Photo[]) => {
-      const copy = [...arr];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-      }
-      return copy;
-    };
-
-    // Guarantee the first screen (first 9 slots) has perfectly distinct images
-    // by appending fully distinct shuffled chunks repeatedly.
-    while (displayPhotos.length < totalSlots) {
-      const chunk = shuffleArray(photos);
-      displayPhotos.push(...chunk);
+    // Create ONE master shuffled sequence
+    const masterSequence = [...photos];
+    for (let i = masterSequence.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [masterSequence[i], masterSequence[j]] = [masterSequence[j], masterSequence[i]];
     }
-    
-    displayPhotos.length = totalSlots;
+
+    // Repeat the exact same master sequence infinitely.
+    // This perfectly guarantees that any 9-10 sliding window across the tiles
+    // will contain distinct images without duplicate clumping at tile boundaries.
+    for (let i = 0; i < totalSlots; i++) {
+      displayPhotos.push(masterSequence[i % masterSequence.length]);
+    }
 
     const totalTiles = Math.max(1, Math.ceil(displayPhotos.length / REFERENCE_LAYOUT.length));
     const tileCols = Math.ceil(Math.sqrt(totalTiles));
