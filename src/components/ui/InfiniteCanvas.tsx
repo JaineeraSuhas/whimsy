@@ -425,8 +425,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         const distToCenter = Math.pow(cx - centerX, 2) + Math.pow(cy - centerY, 2);
         const distToMouse = Math.pow(cx - mousePX, 2) + Math.pow(cy - mousePY, 2);
 
-        // Viewport Culling buffer
-        const buffer = 500;
+        // Viewport Culling buffer - massively increased to completely prevent popping during fast scroll/slide
+        const buffer = 1200;
         const isVisible =
           absFinalX >= -item.width - buffer &&
           absFinalX <= winW.current + buffer &&
