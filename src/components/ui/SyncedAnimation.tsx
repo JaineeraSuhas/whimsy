@@ -23,7 +23,7 @@ interface LetterProps {
 export function SyncedAnimation() {
   return (
     <div className="flex items-center justify-center bg-black min-h-screen w-full">
-      <div className="flex items-center justify-center gap-1 md:gap-2 h-16 md:h-24 select-none">
+      <div className="flex items-center justify-center gap-1 md:gap-2 h-16 md:h-24 select-none -translate-y-4 md:-translate-y-6">
         <LetterS delay={0.1} />
         <LetterY delay={0.2} />
         <LetterN delay={0.3} />

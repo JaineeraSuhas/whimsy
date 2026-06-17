@@ -279,68 +279,66 @@ export default function Home() {
     return <HeroSection onEnter={() => setShowApp(true)} />;
   }
 
-  // STATE 2 & 3: Initial Upload Page & Synced Message
-  if (showInitialUpload || globalSynced) {
-    return (
-      <main className="relative w-full h-screen overflow-hidden bg-black text-white">
-        <AnimatePresence mode="wait">
-          {globalSynced ? (
-            <motion.div
-              key="synced"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: "easeInOut" }}
-              className="absolute inset-0 bg-black z-[99999] flex items-center justify-center w-full h-full"
-            >
-              <SyncedAnimation />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="upload"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 z-0 bg-black"
-            >
-              <UploadSection 
-                onUploadComplete={handleGlobalUploadComplete}
-                onBack={() => setShowApp(false)}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-    );
-  }
-
-  // STATE 4: Main Gallery Page
   return (
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
-      {/* Main View Area (Infinite Canvas or 3D Spatial layouts) */}
-      <div className="absolute inset-0 z-0 bg-black">
-        <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
+        {globalSynced ? (
           <motion.div
-            key={layoutMode}
+            key="synced"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="absolute inset-0 bg-black z-[99999] flex items-center justify-center w-full h-full"
+          >
+            <SyncedAnimation />
+          </motion.div>
+        ) : showInitialUpload ? (
+          <motion.div
+            key="upload"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 z-0 bg-black"
+          >
+            <UploadSection 
+              onUploadComplete={handleGlobalUploadComplete}
+              onBack={() => setShowApp(false)}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="gallery"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
             className="absolute inset-0"
           >
-            {layoutMode === 'canvas' ? (
-              <InfiniteCanvasView photos={filteredPhotos} />
-            ) : (
-              <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode as any} isPaused={false} />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+            {/* Main View Area (Infinite Canvas or 3D Spatial layouts) */}
+            <div className="absolute inset-0 z-0 bg-black">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={layoutMode}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute inset-0"
+                >
+                  {layoutMode === 'canvas' ? (
+                    <InfiniteCanvasView photos={filteredPhotos} />
+                  ) : (
+                    <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode as any} isPaused={false} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-      {photos.length > 0 && (
-        <>
-          {/* Desktop HUD / Controls Overlay - Left side, hidden on mobile */}
+            {photos.length > 0 && (
+              <>
+                {/* Desktop HUD / Controls Overlay - Left side, hidden on mobile */}
       <div className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 z-40 flex-col gap-4 pointer-events-none">
         <div className="pointer-events-auto">
           <CircleMenu
@@ -627,9 +625,11 @@ export default function Home() {
         }}
         onLayoutClick={() => { }}
       />
-        </>
-      )}
-
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
