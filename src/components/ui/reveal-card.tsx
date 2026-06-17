@@ -149,11 +149,13 @@ export const RevealCard: React.FC<RevealCardProps> = ({
             }}
           >
             <span 
-              className={`text-[9px] font-bold text-black tracking-[0.6em] md:tracking-[0.2em] ${scribbleFont.className}`}
+              className={`text-[9px] font-bold text-black tracking-[0.2em] ${scribbleFont.className}`}
               style={{
                 writingMode: "vertical-lr",
                 textOrientation: "upright",
-                lineHeight: "1.8"
+                lineHeight: "1.8",
+                WebkitTextSizeAdjust: "none",
+                textSizeAdjust: "none"
               }}
             >
               suhas<br />jaineera<br /><span className="inline-block translate-y-[3px]" style={{ textOrientation: "mixed" }}>:)</span>
