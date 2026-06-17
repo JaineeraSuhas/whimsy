@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Caveat } from "next/font/google";
 
@@ -37,6 +37,33 @@ export const RevealCard: React.FC<RevealCardProps> = ({
   // Map mouse to the shiny reflection position for sweeping dynamic light movement!
   const shineX = useTransform(mouseXSpring, [-0.5, 0.5], ["-100%", "100%"]);
   const shineY = useTransform(mouseYSpring, [-0.5, 0.5], ["-100%", "100%"]);
+
+  // Mobile tilt support
+  useEffect(() => {
+    // Only apply on touch devices to avoid conflicting with desktop mouse
+    if (typeof window !== "undefined" && window.matchMedia("(hover: none)").matches) {
+      const handleOrientation = (e: DeviceOrientationEvent) => {
+        if (e.gamma !== null && e.beta !== null) {
+          // Normal holding angle assumed to be ~45 degrees (beta)
+          const tiltX = Math.max(-0.5, Math.min(0.5, e.gamma / 60));
+          const tiltY = Math.max(-0.5, Math.min(0.5, (e.beta - 45) / 60));
+          
+          mouseXSpring.set(tiltX);
+          mouseYSpring.set(tiltY);
+          
+          // If we tilt it strongly, simulate a hover to reveal the shine
+          if (Math.abs(tiltX) > 0.1 || Math.abs(tiltY) > 0.1) {
+             setIsHovered(true);
+          } else {
+             setIsHovered(false);
+          }
+        }
+      };
+      
+      window.addEventListener("deviceorientation", handleOrientation);
+      return () => window.removeEventListener("deviceorientation", handleOrientation);
+    }
+  }, [mouseXSpring, mouseYSpring]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!ref.current || isFlipped) return; // Disable hover tilt while flipped
@@ -122,7 +149,7 @@ export const RevealCard: React.FC<RevealCardProps> = ({
             }}
           >
             <span 
-              className={`text-[9px] font-bold text-black tracking-[0.2em] ${scribbleFont.className}`}
+              className={`text-[9px] font-bold text-black tracking-[0.6em] md:tracking-[0.2em] ${scribbleFont.className}`}
               style={{
                 writingMode: "vertical-lr",
                 textOrientation: "upright",

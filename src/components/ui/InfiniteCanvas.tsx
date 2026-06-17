@@ -333,8 +333,8 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
       isDragging.current = false;
       mouse.current.press.t = 0;
       
-      // Apply momentum from velocity
-      const momentumMultiplier = 180; // Distance multiplier for the throw
+      // Apply momentum from velocity (increased for smoother, longer throw)
+      const momentumMultiplier = 380; // Distance multiplier for the throw
       scroll.current.target.x += touchVelocity.current.x * momentumMultiplier;
       scroll.current.target.y += touchVelocity.current.y * momentumMultiplier;
       
@@ -348,12 +348,14 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
         e.preventDefault();
         const touch = e.touches[0];
         
-        // Calculate Velocity
+        // Calculate Velocity with smoothing to avoid erratic throws
         const now = performance.now();
         const dt = now - touchVelocity.current.time;
-        if (dt > 0) {
-           touchVelocity.current.x = (touch.clientX - touchVelocity.current.lastX) / dt;
-           touchVelocity.current.y = (touch.clientY - touchVelocity.current.lastY) / dt;
+        if (dt > 0 && dt < 100) { // Ignore huge jumps
+           const vx = (touch.clientX - touchVelocity.current.lastX) / dt;
+           const vy = (touch.clientY - touchVelocity.current.lastY) / dt;
+           touchVelocity.current.x = touchVelocity.current.x * 0.4 + vx * 0.6;
+           touchVelocity.current.y = touchVelocity.current.y * 0.4 + vy * 0.6;
         }
         touchVelocity.current.time = now;
         touchVelocity.current.lastX = touch.clientX;

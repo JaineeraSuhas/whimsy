@@ -218,7 +218,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-black">
       {/* Scroll/Drag indicator — reference style */}
-      <div className={`absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-[60] pointer-events-none flex items-center gap-3 transition-opacity duration-[1500ms] ${showInstruction ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
+      <div className={`absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-[60] pointer-events-none flex items-center gap-3 transition-opacity duration-[1500ms] w-max whitespace-nowrap ${showInstruction ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
           <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>

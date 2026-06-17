@@ -52,7 +52,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
 
   return (
     <div
-      className="relative flex w-full h-screen justify-center items-center bg-black overflow-hidden"
+      className="relative flex w-full h-[100dvh] md:h-screen justify-center items-center bg-black overflow-hidden"
       ref={scope}
     >
       {/* Center content — always on top */}
