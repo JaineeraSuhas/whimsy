@@ -262,10 +262,12 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
             )}
 
             {/* Border / Frame */}
-            <mesh position={[0, 0, -0.01]}>
-                <planeGeometry args={[width + 0.1, height + 0.1]} />
-                <meshBasicMaterial color={hovered ? "#FF4D00" : "#FFFFFF"} opacity={0.3} transparent />
-            </mesh>
+            {layoutMode !== 'snowfall' && (
+                <mesh position={[0, 0, -0.01]}>
+                    <planeGeometry args={[width + 0.1, height + 0.1]} />
+                    <meshBasicMaterial color={hovered ? "#FF4D00" : "#FFFFFF"} opacity={0.3} transparent />
+                </mesh>
+            )}
         </group>
     );
 }
@@ -376,7 +378,7 @@ function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layout
 
     return (
         <>
-            <OrbitControls enableDamping dampingFactor={0.05} autoRotate={!isPaused} autoRotateSpeed={0.5} enabled={!isPaused} />
+            <OrbitControls enableDamping dampingFactor={0.05} autoRotate={!isPaused && layoutMode !== 'snowfall'} autoRotateSpeed={0.5} enabled={!isPaused && layoutMode !== 'snowfall'} />
 
             <group>
                 {layoutItems.map((item) => (
