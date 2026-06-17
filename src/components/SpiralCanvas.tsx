@@ -271,8 +271,8 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
 }
 
 // Helper to get positions based on layout
-function getLayoutPositions(photos: Photo[], layout: 'globe' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
-    const isMobile = viewport.width < 768; // Simple breakpoint check
+function getLayoutPositions(photos: Photo[], layout: 'globe' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder') {
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
     // Using global seededRandom helper for consistent particle positions per photo
 
@@ -372,7 +372,7 @@ function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layout
     }, [selectedPhoto]);
 
     // Smooth layout transitions could be added here with spring, but direct switch for now
-    const layoutItems = useMemo(() => getLayoutPositions(photos, layoutMode, { width: viewport.width, height: viewport.height }), [photos, layoutMode, viewport]);
+    const layoutItems = useMemo(() => getLayoutPositions(photos, layoutMode), [photos, layoutMode]);
 
     return (
         <>
