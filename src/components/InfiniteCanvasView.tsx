@@ -109,26 +109,30 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
     const displayPhotos: Photo[] = [];
 
-    // Seeded pseudo-random shuffle
+    // Seeded pseudo-random shuffle to prevent adjacent identical photos
     let seed = 12345;
     const random = () => {
       seed = (seed * 9301 + 49297) % 233280;
       return seed / 233280;
     };
     
-    // Create ONE master shuffled sequence
-    const masterSequence = [...photos];
-    for (let i = masterSequence.length - 1; i > 0; i--) {
-      const j = Math.floor(random() * (i + 1));
-      [masterSequence[i], masterSequence[j]] = [masterSequence[j], masterSequence[i]];
-    }
+    const shuffleArray = (arr: Photo[]) => {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
 
-    // Repeat the exact same master sequence infinitely.
-    // This mathematically guarantees that ANY sliding window across the tiles
-    // will contain distinct images (no duplicates clumping at tile boundaries).
-    for (let i = 0; i < totalSlots; i++) {
-      displayPhotos.push(masterSequence[i % masterSequence.length]);
+    // Guarantee the first screen (first 9 slots) has perfectly distinct images
+    // by appending fully distinct shuffled chunks repeatedly.
+    while (displayPhotos.length < totalSlots) {
+      const chunk = shuffleArray(photos);
+      displayPhotos.push(...chunk);
     }
+    
+    displayPhotos.length = totalSlots;
 
     const totalTiles = Math.max(1, Math.ceil(displayPhotos.length / REFERENCE_LAYOUT.length));
     const tileCols = Math.ceil(Math.sqrt(totalTiles));
