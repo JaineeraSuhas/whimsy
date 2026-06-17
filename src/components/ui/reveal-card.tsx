@@ -163,15 +163,17 @@ export const RevealCard: React.FC<RevealCardProps> = ({
             </span>
 
             {/* Mobile Layout (Bulletproof Flex Columns to avoid iOS text bugs) */}
-            <div className={`flex md:hidden flex-row gap-[6px] items-center justify-center h-full text-black font-bold ${scribbleFont.className}`}>
-              <div className="flex flex-col text-[11px] leading-[0.8] items-center text-center">
-                {'suhas'.split('').map((c, i) => <span key={i}>{c}</span>)}
-              </div>
-              <div className="flex flex-col text-[11px] leading-[0.8] mt-4 items-center text-center">
-                {'jaineera'.split('').map((c, i) => <span key={i}>{c}</span>)}
-              </div>
-              <div className="flex flex-col text-[11px] leading-[0.8] items-center justify-center">
-                <span className="rotate-90 translate-y-1">:)</span>
+            <div className="flex md:hidden items-center justify-center w-full h-full">
+              <div className={`flex flex-row gap-[6px] items-start justify-center h-max text-black font-bold ${scribbleFont.className}`}>
+                <div className="flex flex-col text-[10px] leading-[0.85] items-center text-center">
+                  {'suhas'.split('').map((c, i) => <span key={i}>{c}</span>)}
+                </div>
+                <div className="flex flex-col text-[10px] leading-[0.85] items-center text-center">
+                  {'jaineera'.split('').map((c, i) => <span key={i}>{c}</span>)}
+                </div>
+                <div className="flex flex-col text-[10px] leading-[0.85] items-center justify-start mt-[1px]">
+                  <span className="rotate-90 translate-y-[3px]">:)</span>
+                </div>
               </div>
             </div>
           </div>
