@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import { motion } from "motion/react"
 import UploadDropzone from "../UploadDropzone"
 import { InnerGlobeBackground } from "./InnerGlobeBackground"
-import { SyncedAnimation } from "./SyncedAnimation"
 
 interface UploadSectionProps {
     onUploadComplete: () => void
@@ -12,21 +10,8 @@ interface UploadSectionProps {
 }
 
 export function UploadSection({ onUploadComplete, onBack }: UploadSectionProps) {
-    const [isSynced, setIsSynced] = useState(false)
-
     const handleUploadComplete = () => {
-        setIsSynced(true)
-        setTimeout(() => {
-            onUploadComplete()
-        }, 2800)
-    }
-
-    if (isSynced) {
-        return (
-            <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center w-full h-full">
-                <SyncedAnimation />
-            </div>
-        )
+        onUploadComplete()
     }
 
     return (

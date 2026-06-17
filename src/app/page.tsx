@@ -9,6 +9,7 @@ import Floating, { FloatingElement } from '@/components/ui/parallax-floating';
 import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName, clearAllPhotos } from '@/lib/db';
 import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings, Palette, X, Snowflake } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
+import { SyncedAnimation } from '@/components/ui/SyncedAnimation';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails, subscribeToProcessingState } from '@/lib/face-processing';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -176,6 +177,7 @@ export default function Home() {
   const [layoutMode, setLayoutMode] = useState<'canvas' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('canvas');
   const [isUploading, setIsUploading] = useState(false);
   const [showInitialUpload, setShowInitialUpload] = useState(false);
+  const [globalSynced, setGlobalSynced] = useState(false);
 
   const fetchPhotos = useCallback(async () => {
     setLoading(true);
@@ -189,6 +191,15 @@ export default function Home() {
 
     setLoading(false);
   }, []);
+
+  const handleGlobalUploadComplete = useCallback(() => {
+      setGlobalSynced(true);
+      setTimeout(() => {
+          setGlobalSynced(false);
+          setShowInitialUpload(false);
+          fetchPhotos();
+      }, 2800);
+  }, [fetchPhotos]);
 
   useEffect(() => {
     // Refresh library automatically when background face processing finishes
@@ -271,6 +282,21 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
 
+      {/* GLOBAL SYNCED OVERLAY - Highest z-index, covers everything */}
+      <AnimatePresence>
+        {globalSynced && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="fixed inset-0 bg-black z-[99999] flex items-center justify-center w-full h-full pointer-events-auto"
+          >
+            <SyncedAnimation />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main View Area (Infinite Canvas or 3D Spatial layouts) */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
@@ -284,16 +310,13 @@ export default function Home() {
           >
             {showInitialUpload ? (
               <UploadSection 
-                onUploadComplete={() => {
-                  setShowInitialUpload(false);
-                  fetchPhotos();
-                }}
+                onUploadComplete={handleGlobalUploadComplete}
                 onBack={() => setShowApp(false)}
               />
             ) : layoutMode === 'canvas' ? (
               <InfiniteCanvasView photos={filteredPhotos} />
             ) : (
-              <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode} isPaused={false} />
+              <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode as any} isPaused={false} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -395,7 +418,7 @@ export default function Home() {
           >
             <UploadDropzone
               mode="button"
-              onUploadComplete={fetchPhotos}
+              onUploadComplete={handleGlobalUploadComplete}
               onProcessingChange={setIsUploading}
               className="h-10 w-10 md:w-auto md:px-5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all flex items-center justify-center gap-2 backdrop-blur-xl shadow-2xl z-50"
             >
