@@ -18,7 +18,7 @@ export function UploadSection({ onUploadComplete, onBack }: UploadSectionProps) 
         setIsSynced(true)
         setTimeout(() => {
             onUploadComplete()
-        }, 2800)
+        }, 4500) // Massively increased delay so the synced animation doesn't dissolve instantly
     }
 
     if (isSynced) {

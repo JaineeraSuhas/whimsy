@@ -22,11 +22,6 @@ export default function MobileBottomNav({
             onClick: () => onFilterChange('all')
         },
         {
-            icon: (props: any) => <Users {...props} />,
-            label: "People",
-            onClick: () => onFilterChange('people')
-        },
-        {
             icon: (props: any) => <Palette {...props} />,
             label: "Layouts",
             onClick: onDesignClick

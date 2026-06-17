@@ -215,7 +215,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
 
     // Calculate aspect ratio for plane geometry
     const aspect = photo.metadata.width / photo.metadata.height;
-    const height = 6.0; // Base height unit massively increased to strictly match Infinite Canvas scale
+    const height = layoutMode === 'snowfall' ? 12.0 : 6.0; // Massively increased for Snowfall
     const width = height * aspect;
 
     return (
