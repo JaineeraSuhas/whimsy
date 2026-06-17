@@ -196,7 +196,9 @@ export default function Home() {
         fetchPhotos();
       }
     });
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [fetchPhotos]);
 
   useEffect(() => {
