@@ -16,7 +16,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import InfiniteCanvasView from '@/components/InfiniteCanvasView';
 import { CircleMenu } from '@/components/ui/circle-menu';
 import { MenuContainer, MenuItem } from '@/components/ui/fluid-menu';
-
+import { RevealCard } from '@/components/ui/reveal-card';
 
 
 const exampleImages = [
@@ -625,6 +625,11 @@ export default function Home() {
         }}
         onLayoutClick={() => { }}
       />
+      
+      {/* Upper Layer Reveal Card (Bottom Right) */}
+      <div className="absolute bottom-24 right-4 md:bottom-8 md:right-8 z-[999] pointer-events-auto">
+        <RevealCard />
+      </div>
               </>
             )}
           </motion.div>
