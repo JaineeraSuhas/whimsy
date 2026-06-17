@@ -7,7 +7,7 @@ import UploadDropzone from '@/components/UploadDropzone';
 import SpiralCanvas from '@/components/SpiralCanvas';
 import Floating, { FloatingElement } from '@/components/ui/parallax-floating';
 import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName, clearAllPhotos } from '@/lib/db';
-import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings, Palette, X } from 'lucide-react';
+import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings, Palette, X, Snowflake } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
 import { getPeopleWithThumbnails, subscribeToProcessingState } from '@/lib/face-processing';
@@ -173,7 +173,7 @@ export default function Home() {
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [showPeopleModal, setShowPeopleModal] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<'canvas' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('canvas');
+  const [layoutMode, setLayoutMode] = useState<'canvas' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('canvas');
   const [isUploading, setIsUploading] = useState(false);
 
   const fetchPhotos = useCallback(async () => {
@@ -310,10 +310,10 @@ export default function Home() {
                 isActive: layoutMode === 'canvas'
               },
               {
-                label: 'Spiral',
-                icon: <Grid size={16} className="text-white" />,
-                onClick: () => setLayoutMode('spiral'),
-                isActive: layoutMode === 'spiral'
+                label: 'Snowfall',
+                icon: <Snowflake size={16} className="text-white" />,
+                onClick: () => setLayoutMode('snowfall'),
+                isActive: layoutMode === 'snowfall'
               },
               {
                 label: 'Sphere',
@@ -509,7 +509,7 @@ export default function Home() {
                 />
                 {[
                   { id: 'canvas', icon: <Library size={18} /> },
-                  { id: 'spiral', icon: <Grid size={18} /> },
+                  { id: 'snowfall', icon: <Snowflake size={18} /> },
                   { id: 'sphere', icon: <Circle size={18} /> },
                   { id: 'particles', icon: <Sparkles size={18} /> },
                   { id: 'wave', icon: <Waves size={18} /> },

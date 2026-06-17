@@ -175,7 +175,6 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
     useFrame((state) => {
         if (isPaused) return; // Completely freeze animations when uploading to save battery/resources
         if (meshRef.current) {
-            // Enhanced floating for particles
             if (layoutMode === 'particles') {
                 // Float up and down
                 meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
@@ -183,16 +182,32 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
                 meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
                 // Look at camera for particles to make them engaging
                 meshRef.current.lookAt(camera.position);
+            } else if (layoutMode === 'snowfall') {
+                const isMobile = window.innerWidth < 768;
+                const bounds = isMobile ? 120 : 180;
+                
+                // Fall continuously
+                meshRef.current.position.y -= driftSpeed * 0.6;
+                
+                // Wrap around when falling out of bounds
+                const globalY = position[1] + meshRef.current.position.y;
+                if (globalY < -bounds / 2) {
+                    meshRef.current.position.y = (bounds / 2) - position[1];
+                }
+                
+                // Gentle horizontal sway
+                meshRef.current.position.x = Math.sin(state.clock.elapsedTime * driftSpeed + driftOffset) * 2;
+                // Gentle rotation
+                meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5 + driftOffset) * 0.1;
+                // Face camera
+                meshRef.current.lookAt(camera.position);
             } else {
                 // Standard subtle float for other modes
-                // Reset rotation caused by 'particles' lookAt to ensure flat alignment with group
+                // Reset rotation caused by lookAt to ensure flat alignment with group
                 meshRef.current.rotation.set(0, 0, 0);
 
                 // Add standard subtle float
-                // We use a local y offset reset to prevent accumulation if we were strictly adding
-                // But since position prop changes on layout switch, the group moves. 
-                // The mesh position is local.
-                // Let's us a simple sine wave for local float instead of specific accumulation to avoid drift
+                meshRef.current.position.x = 0; // Reset X in case we switched from snowfall
                 meshRef.current.position.y = Math.sin(state.clock.elapsedTime + position[0]) * 0.1; // Reduced float amplitude
             }
         }
@@ -256,7 +271,7 @@ function PhotoMesh({ photo, position, rotation, onClick, index, layoutMode, isPa
 }
 
 // Helper to get positions based on layout
-function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
+function getLayoutPositions(photos: Photo[], layout: 'globe' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', viewport: { width: number, height: number }) {
     const isMobile = viewport.width < 768; // Simple breakpoint check
 
     // Using global seededRandom helper for consistent particle positions per photo
@@ -265,15 +280,17 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
         let pos: [number, number, number] = [0, 0, 0];
         let rot: [number, number, number] = [0, 0, 0];
 
-        if (layout === 'spiral') {
-            const spacing = isMobile ? 1.2 : 0.9;
-            const angle = index * spacing;
-            const yOffset = isMobile ? 1.0 : 1.3;
-            const y = index * yOffset - (photos.length * (yOffset / 2)); // Center vertically
-            const radiusBase = isMobile ? 14 : 20;
-            const r = radiusBase + (index * (isMobile ? 0.15 : 0.3));
-            pos = [r * Math.cos(angle), y, r * Math.sin(angle)];
-            rot = [0, -angle + Math.PI / 2 + Math.PI, 0];
+        if (layout === 'snowfall') {
+            const spreadX = isMobile ? 60 : 100;
+            const spreadY = isMobile ? 120 : 180;
+            const spreadZ = isMobile ? 40 : 60;
+            
+            const rX = seededRandom(index * 13.5) - 0.5;
+            const rY = seededRandom(index * 27.2) - 0.5;
+            const rZ = seededRandom(index * 41.9) - 0.5;
+            
+            pos = [rX * spreadX, rY * spreadY, rZ * spreadZ - 10];
+            rot = [0, 0, 0];
         }
         else if (layout === 'sphere') {
             // Fibonacci Sphere
@@ -339,7 +356,7 @@ function getLayoutPositions(photos: Photo[], layout: 'globe' | 'spiral' | 'spher
     });
 }
 
-function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layoutMode: 'globe' | 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', isPaused: boolean }) {
+function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layoutMode: 'globe' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder', isPaused: boolean }) {
     const { camera, viewport } = useThree();
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
@@ -391,7 +408,7 @@ function SpiralScene({ photos, layoutMode, isPaused }: { photos: Photo[], layout
 
 interface SpiralCanvasProps {
     photos: Photo[];
-    layoutMode: 'spiral' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder';
+    layoutMode: 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder';
     isPaused?: boolean;
 }
 
