@@ -6,7 +6,6 @@ import { useDropzone } from 'react-dropzone';
 import { v4 as uuidv4 } from 'uuid';
 import EXIF from 'exif-js';
 import { savePhoto, Photo } from '@/lib/db';
-import { processFacesInPhoto } from '@/lib/face-processing';
 
 export default function UploadDropzone({ 
     onUploadComplete, 
@@ -144,12 +143,8 @@ export default function UploadDropzone({
                         };
 
                         try {
-                            // Save photo first
+                            // Save photo
                             await savePhoto(newPhoto);
-
-                            // Then detect faces in background
-                            setStatusMessage(`Detecting faces in ${file.name}...`);
-                            await processFacesInPhoto(newPhoto);
                         } catch (e) {
                             console.warn("Processing failed for", file.name, e);
                             setStatusMessage(`Skipping faulty image: ${file.name}`);
@@ -184,15 +179,11 @@ export default function UploadDropzone({
 
         let processedCount = 0;
 
-        // Process files sequentially with delay to prevent mobile Safari crashes (OOM)
+        // Process files sequentially
         for (const file of acceptedFiles) {
             await processFile(file);
             processedCount++;
             setProgress(Math.round((processedCount / acceptedFiles.length) * 100));
-
-            // Critical: Force 1s delay between files to allow Garbage Collection
-            // This prevents "A problem repeatedly occurred" on iOS
-            await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         updateProcessingState(false);

@@ -279,41 +279,57 @@ export default function Home() {
     return <HeroSection onEnter={() => setShowApp(true)} />;
   }
 
+  // STATE 2 & 3: Initial Upload Page & Synced Message
+  if (showInitialUpload || globalSynced) {
+    return (
+      <main className="relative w-full h-screen overflow-hidden bg-black text-white">
+        <AnimatePresence mode="wait">
+          {globalSynced ? (
+            <motion.div
+              key="synced"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+              className="absolute inset-0 bg-black z-[99999] flex items-center justify-center w-full h-full"
+            >
+              <SyncedAnimation />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="upload"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-0 z-0 bg-black"
+            >
+              <UploadSection 
+                onUploadComplete={handleGlobalUploadComplete}
+                onBack={() => setShowApp(false)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    );
+  }
+
+  // STATE 4: Main Gallery Page
   return (
     <main className="relative w-full h-screen overflow-hidden bg-black text-white">
-
-      {/* GLOBAL SYNCED OVERLAY - Highest z-index, covers everything */}
-      <AnimatePresence>
-        {globalSynced && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="fixed inset-0 bg-black z-[99999] flex items-center justify-center w-full h-full pointer-events-auto"
-          >
-            <SyncedAnimation />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main View Area (Infinite Canvas or 3D Spatial layouts) */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-black">
         <AnimatePresence mode="wait">
           <motion.div
-            key={showInitialUpload ? 'upload' : layoutMode}
+            key={layoutMode}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0"
           >
-            {showInitialUpload ? (
-              <UploadSection 
-                onUploadComplete={handleGlobalUploadComplete}
-                onBack={() => setShowApp(false)}
-              />
-            ) : layoutMode === 'canvas' ? (
+            {layoutMode === 'canvas' ? (
               <InfiniteCanvasView photos={filteredPhotos} />
             ) : (
               <SpiralCanvas photos={filteredPhotos} layoutMode={layoutMode as any} isPaused={false} />
