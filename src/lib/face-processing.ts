@@ -198,8 +198,9 @@ export async function updatePeopleClusters(): Promise<void> {
         if (face && photo.blob) {
           try {
             thumbnailBlob = await extractFaceThumbnail(photo.blob, face.box);
-          } catch {
-            /* skip */
+          } catch (e) {
+            console.warn("[FaceProcessing] Thumbnail extraction failed, falling back to full image", e);
+            thumbnailBlob = photo.blob; // fallback so the person isn't dropped!
           }
           break;
         }
