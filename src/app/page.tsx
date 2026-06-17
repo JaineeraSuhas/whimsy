@@ -74,7 +74,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
 
       {/* Floating background images — absolutely positioned behind text */}
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-        <Floating ref={floatingRef} sensitivity={-1} easingFactor={0.01} className="w-full h-full">
+        <Floating ref={floatingRef} sensitivity={-1} easingFactor={0.02} className="w-full h-full">
         {/* Gallery 1 */}
         <FloatingElement depth={0.5} className="top-[8%] left-[11%]">
           <motion.img
