@@ -61,8 +61,8 @@ export const useMousePositionRef = (
         const handleDeviceOrientation = (ev: DeviceOrientationEvent) => {
             if (ev.gamma === null || ev.beta === null) return;
 
-            // Sensitivity multiplier for mobile tilt (massively increased for strong hovering effect)
-            const sensitivity = 10.0;
+            // Sensitivity multiplier for mobile tilt (massively decreased for subtle spatial effect)
+            const sensitivity = 0.5;
 
             // Map gamma (-30 to 30) to screen width centering
             const gamma = Math.min(Math.max(ev.gamma, -30), 30);

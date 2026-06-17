@@ -10,7 +10,7 @@ import { getAllPhotos, Photo, getPhotosByPeople, updatePersonName, clearAllPhoto
 import { Grid, Users, Plus, Library, Circle, Sparkles, Waves, Dna, Cylinder, Settings, Palette, X } from 'lucide-react';
 import { UploadSection } from '@/components/ui/upload-section';
 import { RadialFaceSelector, type Person } from '@/components/ui/radial-face-selector';
-import { getPeopleWithThumbnails } from '@/lib/face-processing';
+import { getPeopleWithThumbnails, subscribeToProcessingState } from '@/lib/face-processing';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import InfiniteCanvasView from '@/components/InfiniteCanvasView';
 import { CircleMenu } from '@/components/ui/circle-menu';
@@ -74,7 +74,7 @@ const HeroSection = ({ onEnter }: { onEnter: () => void }) => {
 
       {/* Floating background images — absolutely positioned behind text */}
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-        <Floating ref={floatingRef} sensitivity={-1} className="w-full h-full">
+        <Floating ref={floatingRef} sensitivity={-1} easingFactor={0.01} className="w-full h-full">
         {/* Gallery 1 */}
         <FloatingElement depth={0.5} className="top-[8%] left-[11%]">
           <motion.img
@@ -190,6 +190,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Refresh library automatically when background face processing finishes
+    const unsubscribe = subscribeToProcessingState((state) => {
+      if (state === 'idle') {
+        fetchPhotos();
+      }
+    });
+    return () => unsubscribe();
+  }, [fetchPhotos]);
+
+  useEffect(() => {
     const applyFilters = async () => {
       if (filterMode === 'all') {
         setFilteredPhotos(photos);
@@ -269,9 +279,12 @@ export default function Home() {
             className="absolute inset-0"
           >
             {photos.length === 0 ? (
-              <UploadSection onUploadComplete={() => {
-                fetchPhotos();
-              }} />
+              <UploadSection 
+                onUploadComplete={() => {
+                  fetchPhotos();
+                }}
+                onBack={() => setShowApp(false)}
+              />
             ) : layoutMode === 'canvas' ? (
               <InfiniteCanvasView photos={filteredPhotos} />
             ) : (

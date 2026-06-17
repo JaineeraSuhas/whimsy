@@ -8,9 +8,10 @@ import { SyncedAnimation } from "./SyncedAnimation"
 
 interface UploadSectionProps {
     onUploadComplete: () => void
+    onBack?: () => void
 }
 
-export function UploadSection({ onUploadComplete }: UploadSectionProps) {
+export function UploadSection({ onUploadComplete, onBack }: UploadSectionProps) {
     const [isSynced, setIsSynced] = useState(false)
 
     const handleUploadComplete = () => {
@@ -32,6 +33,17 @@ export function UploadSection({ onUploadComplete }: UploadSectionProps) {
         <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black">
             <InnerGlobeBackground />
             
+            {/* Header / Back Button */}
+            <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
+                <div className="flex justify-between items-center px-6 py-4 md:px-8 md:py-6">
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pointer-events-auto">
+                        <h1 onClick={onBack} className="text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-70 transition-opacity cursor-pointer text-white">
+                            whimsy.
+                        </h1>
+                    </motion.div>
+                </div>
+            </div>
+
             {/* Main content - clean centered layout */}
             <div className="relative flex flex-col items-center justify-center z-20 w-full h-full px-4">
                 <div className="w-full max-w-5xl flex flex-col items-center justify-center space-y-8 md:space-y-10">

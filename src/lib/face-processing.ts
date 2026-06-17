@@ -59,10 +59,16 @@ export async function warmupModels(): Promise<void> {
   if (warmupDone) return;
   warmupDone = true;
   try {
-    await loadFaceDetectionModel();
+    await Promise.race([
+      loadFaceDetectionModel(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("warmup timeout")), 15_000)
+      ),
+    ]);
     console.log("[FaceProcessing] Models warmed up ✅");
   } catch (e) {
     console.warn("[FaceProcessing] Warmup failed (will retry on first photo):", e);
+    warmupDone = false;
   }
 }
 

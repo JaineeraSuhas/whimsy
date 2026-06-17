@@ -80,7 +80,18 @@ export async function loadFaceDetectionModel(): Promise<void> {
 
 // ─── Preprocessing ────────────────────────────────────────────────────────────
 
-function preprocessToCanvas(img: HTMLImageElement, maxDim = 1024): HTMLCanvasElement {
+function getMaxDim(): number {
+  if (
+    typeof navigator !== "undefined" &&
+    "deviceMemory" in navigator &&
+    (navigator as Navigator & { deviceMemory?: number }).deviceMemory! < 2
+  ) {
+    return 640;
+  }
+  return 1024;
+}
+
+function preprocessToCanvas(img: HTMLImageElement, maxDim = getMaxDim()): HTMLCanvasElement {
   const ow = img.naturalWidth  || img.width;
   const oh = img.naturalHeight || img.height;
   const scale = Math.min(1, maxDim / Math.max(ow, oh));
@@ -276,14 +287,14 @@ function isLikelyFalsePositive(lms: { x: number; y: number }[]): boolean {
 
 // ─── Quality + skin tone ──────────────────────────────────────────────────────
 
-function analyzeRegion(
-  img: HTMLImageElement,
+function analyzeRegionFromCanvas(
+  canvas: HTMLCanvasElement,
   normBbox: Box
 ): { skinTone: { r: number; g: number; b: number }; quality: number } {
   const fallback = { skinTone: { r: 128, g: 100, b: 90 }, quality: 0.5 };
   try {
-    const ow = img.naturalWidth || img.width;
-    const oh = img.naturalHeight || img.height;
+    const ow = canvas.width;
+    const oh = canvas.height;
     const sx = normBbox.x * ow, sy = normBbox.y * oh;
     const sw = normBbox.width * ow, sh = normBbox.height * oh;
     if (sw < 2 || sh < 2) return fallback;
@@ -292,7 +303,7 @@ function analyzeRegion(
     const c = document.createElement("canvas");
     c.width = S; c.height = S;
     const ctx = c.getContext("2d", { willReadFrequently: true })!;
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, S, S);
+    ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, S, S);
     const { data } = ctx.getImageData(0, 0, S, S);
 
     let r = 0, g = 0, b = 0, n = 0;
@@ -351,7 +362,7 @@ function runLandmarker(
 
     const descriptor = landmarksToDescriptor(lms);
     const likelyFalsePositive = isLikelyFalsePositive(lms);
-    const { skinTone, quality } = analyzeRegion(img, normBbox);
+    const { skinTone, quality } = analyzeRegionFromCanvas(canvas, normBboxRotated);
 
     return {
       id: `face-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -405,7 +416,12 @@ export async function detectFaces(imageSource: Blob | HTMLImageElement): Promise
     }
 
     // 4. Scale pyramid (extra pass for wide images → catches small faces)
-    if (ow > 800 || oh > 800) {
+    const canUpscale =
+      typeof navigator === "undefined" ||
+      !("deviceMemory" in navigator) ||
+      (navigator as Navigator & { deviceMemory?: number }).deviceMemory! >= 4;
+
+    if (canUpscale && (ow > 800 || oh > 800)) {
       const upscaled     = upscaleCanvas(canvas, 2);
       const pyramidFaces = runLandmarker(upscaled, img, 0, true, preprocessingMs);
       console.log(`[FaceDetection] pyramid → ${pyramidFaces.length} faces`);
@@ -445,6 +461,7 @@ export function facesMatch(d1: Float32Array, d2: Float32Array, threshold = 0.55)
 export async function extractFaceThumbnail(imageSource: Blob, box: Box, padding = 0.3): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     const url = URL.createObjectURL(imageSource);
     img.onload = () => {
       URL.revokeObjectURL(url);
@@ -471,6 +488,7 @@ async function toHTMLImage(src: Blob | HTMLImageElement): Promise<HTMLImageEleme
   if (src instanceof HTMLImageElement) return src;
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     const url = URL.createObjectURL(src);
     img.onload  = () => { URL.revokeObjectURL(url); resolve(img); };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
