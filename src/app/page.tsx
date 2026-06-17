@@ -175,6 +175,7 @@ export default function Home() {
   const [showPeopleModal, setShowPeopleModal] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'canvas' | 'snowfall' | 'sphere' | 'particles' | 'wave' | 'helix' | 'cylinder'>('canvas');
   const [isUploading, setIsUploading] = useState(false);
+  const [showInitialUpload, setShowInitialUpload] = useState(false);
 
   const fetchPhotos = useCallback(async () => {
     setLoading(true);
@@ -232,6 +233,7 @@ export default function Home() {
       setFilteredPhotos(storedPhotos);
 
       if (storedPhotos.length === 0) {
+          setShowInitialUpload(true);
           // If no photos exist, we show the app but it will automatically wait for the user to upload via the header button.
       }
 
@@ -273,16 +275,17 @@ export default function Home() {
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
           <motion.div
-            key={photos.length === 0 ? 'empty' : layoutMode}
+            key={showInitialUpload ? 'upload' : layoutMode}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0"
           >
-            {photos.length === 0 ? (
+            {showInitialUpload ? (
               <UploadSection 
                 onUploadComplete={() => {
+                  setShowInitialUpload(false);
                   fetchPhotos();
                 }}
                 onBack={() => setShowApp(false)}
