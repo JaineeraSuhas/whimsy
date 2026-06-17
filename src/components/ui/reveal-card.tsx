@@ -148,8 +148,9 @@ export const RevealCard: React.FC<RevealCardProps> = ({
               transform: "rotateY(180deg)" 
             }}
           >
+            {/* Desktop Layout (Using standard vertical-lr) */}
             <span 
-              className={`text-[9px] font-bold text-black tracking-[0.2em] ${scribbleFont.className}`}
+              className={`hidden md:inline-block text-[9px] font-bold text-black tracking-[0.2em] ${scribbleFont.className}`}
               style={{
                 writingMode: "vertical-lr",
                 textOrientation: "upright",
@@ -160,6 +161,19 @@ export const RevealCard: React.FC<RevealCardProps> = ({
             >
               suhas<br />jaineera<br /><span className="inline-block translate-y-[3px]" style={{ textOrientation: "mixed" }}>:)</span>
             </span>
+
+            {/* Mobile Layout (Bulletproof Flex Columns to avoid iOS text bugs) */}
+            <div className={`flex md:hidden flex-row gap-[6px] items-center justify-center h-full text-black font-bold ${scribbleFont.className}`}>
+              <div className="flex flex-col text-[11px] leading-[0.8] items-center text-center">
+                {'suhas'.split('').map((c, i) => <span key={i}>{c}</span>)}
+              </div>
+              <div className="flex flex-col text-[11px] leading-[0.8] mt-4 items-center text-center">
+                {'jaineera'.split('').map((c, i) => <span key={i}>{c}</span>)}
+              </div>
+              <div className="flex flex-col text-[11px] leading-[0.8] items-center justify-center">
+                <span className="rotate-90 translate-y-1">:)</span>
+              </div>
+            </div>
           </div>
         </motion.div>
       </motion.div>
