@@ -356,24 +356,12 @@ export default function Home() {
       {/* Desktop Settings - Bottom Left, hidden on mobile */}
       <div className="hidden md:flex absolute bottom-24 left-8 z-40 flex-col gap-3 pointer-events-none">
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => setShowSettings(true)}
           className="px-4 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white/80 text-sm hover:text-white transition-all pointer-events-auto flex items-center gap-2 backdrop-blur-xl shadow-2xl"
         >
           <Settings size={16} />
           <span>Settings</span>
         </button>
-
-        {showSettings && (
-          <div className="p-4 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 pointer-events-auto w-56 shadow-2xl">
-            <p className="text-xs text-white/50 mb-3 uppercase tracking-wider font-medium font-mono">Actions</p>
-            <button
-              onClick={handleClearStorage}
-              className="w-full px-4 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors border border-red-500/30 cursor-pointer"
-            >
-              Clear All Photos
-            </button>
-          </div>
-        )}
       </div>
 
       {/* UI Overlay - Top Status Bar (iOS/macOS Style) */}

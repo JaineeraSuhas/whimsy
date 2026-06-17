@@ -103,10 +103,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     // Round up to the nearest full tile so the grid is always complete
     const totalSlots = Math.ceil(slotsToFill / REFERENCE_LAYOUT.length) * REFERENCE_LAYOUT.length;
 
-    const displayPhotos = [];
-    for (let i = 0; i < totalSlots; i++) {
-      displayPhotos.push(photos[i % photos.length]);
-    }
+    const displayPhotos: Photo[] = [];
 
     // Seeded pseudo-random shuffle to prevent adjacent identical photos
     let seed = 12345;
@@ -115,10 +112,23 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
       return seed / 233280;
     };
     
-    for (let i = displayPhotos.length - 1; i > 0; i--) {
-      const j = Math.floor(random() * (i + 1));
-      [displayPhotos[i], displayPhotos[j]] = [displayPhotos[j], displayPhotos[i]];
+    const shuffleArray = (arr: Photo[]) => {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+
+    // Guarantee the first screen (first 9 slots) has perfectly distinct images
+    // by appending fully distinct shuffled chunks repeatedly.
+    while (displayPhotos.length < totalSlots) {
+      const chunk = shuffleArray(photos);
+      displayPhotos.push(...chunk);
     }
+    
+    displayPhotos.length = totalSlots;
 
     const totalTiles = Math.max(1, Math.ceil(displayPhotos.length / REFERENCE_LAYOUT.length));
     const tileCols = Math.ceil(Math.sqrt(totalTiles));
@@ -203,7 +213,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
   const activeCard = activePhotoIndex !== null ? layoutData.cards[activePhotoIndex] : null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-[#050505]">
+    <div className="relative w-full h-full overflow-hidden select-none bg-black">
       {/* Scroll/Drag indicator — reference style */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex items-center gap-3">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
