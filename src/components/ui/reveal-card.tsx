@@ -16,7 +16,7 @@ interface RevealCardProps {
 
 export const RevealCard: React.FC<RevealCardProps> = ({ 
   // Uses the specific image provided by the user!
-  imageUrl = "/author-card.jpg" 
+  imageUrl = "/author-card.png" 
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isFlipped, setIsFlipped] = useState(false);
