@@ -215,6 +215,78 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
 
   const activeCard = activePhotoIndex !== null ? layoutData.cards[activePhotoIndex] : null;
 
+  const canvasChildren = useMemo(() => {
+    return layoutData.cards.map((card) => (
+      <div
+        key={`${card.photo.id}-${card.index}`}
+        className="absolute"
+        style={{
+          left: `${card.left}px`,
+          top: `${card.top}px`,
+          width: `${card.width}px`,
+          zIndex: card.zIndex,
+          transform: 'translate(-50%, -50%)', // Match Framer's exact transform
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: Math.min(card.delay, 1.2), ease: [0.25, 0.1, 0.25, 1] }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenPhoto) {
+              onOpenPhoto(card.photo);
+            } else {
+              setActivePhotoIndex(card.index);
+            }
+          }}
+          className="w-full flex flex-col cursor-pointer group select-none gap-[8px]"
+        >
+          {/* Image container */}
+          <div
+            className="w-full relative overflow-hidden bg-[#111]"
+            style={{ height: `${card.height}px` }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={card.imageUrl}
+              alt={card.photo.metadata.originalName}
+              className="w-full h-full object-cover select-none transition-transform duration-[1.2s] ease-out md:group-hover:scale-[1.04] active:scale-[0.98]"
+              draggable={false}
+              loading="lazy"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.retried) {
+                  target.dataset.retried = '1';
+                  try {
+                    const url = URL.createObjectURL(card.photo.blob);
+                    target.src = url;
+                  } catch { /* ignore */ }
+                }
+              }}
+            />
+          </div>
+
+          {/* Metadata text block — matching reference exactly */}
+          <div className="flex flex-col items-start w-full gap-[2px] mt-1" style={{ fontFamily: "'Roboto Mono', monospace" }}>
+            <span className="text-[6px] text-white font-bold leading-[1.3em] w-full whitespace-pre-wrap break-words">
+              {card.cleanName || 'Untitled'}
+            </span>
+            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
+              12 x 6 inch C type hand print
+            </span>
+            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
+              Edition of 1 Plus and additional artist Proof
+            </span>
+            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
+              2024
+            </span>
+          </div>
+        </motion.div>
+      </div>
+    ));
+  }, [layoutData.cards, onOpenPhoto]);
+
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-black">
       {/* Scroll/Drag indicator — reference style */}
@@ -240,75 +312,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
         contentWidth={layoutData.totalW}
         contentHeight={layoutData.totalH}
       >
-        {layoutData.cards.map((card) => (
-          <div
-            key={`${card.photo.id}-${card.index}`}
-            className="absolute"
-            style={{
-              left: `${card.left}px`,
-              top: `${card.top}px`,
-              width: `${card.width}px`,
-              zIndex: card.zIndex,
-              transform: 'translate(-50%, -50%)', // Match Framer's exact transform
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: Math.min(card.delay, 1.2), ease: [0.25, 0.1, 0.25, 1] }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onOpenPhoto) {
-                  onOpenPhoto(card.photo);
-                } else {
-                  setActivePhotoIndex(card.index);
-                }
-              }}
-              className="w-full flex flex-col cursor-pointer group select-none gap-[8px]"
-            >
-              {/* Image container */}
-              <div
-                className="w-full relative overflow-hidden bg-[#111]"
-                style={{ height: `${card.height}px` }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={card.imageUrl}
-                  alt={card.photo.metadata.originalName}
-                  className="w-full h-full object-cover select-none transition-transform duration-[1.2s] ease-out md:group-hover:scale-[1.04] active:scale-[0.98]"
-                  draggable={false}
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = '1';
-                      try {
-                        const url = URL.createObjectURL(card.photo.blob);
-                        target.src = url;
-                      } catch { /* ignore */ }
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Metadata text block — matching reference exactly */}
-              <div className="flex flex-col items-start w-full gap-[2px] mt-1" style={{ fontFamily: "'Roboto Mono', monospace" }}>
-                <span className="text-[6px] text-white font-bold leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  {card.cleanName || 'Untitled'}
-                </span>
-                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  12 x 6 inch C type hand print
-                </span>
-                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  Edition of 1 Plus and additional artist Proof
-                </span>
-                <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-                  2024
-                </span>
-              </div>
-            </motion.div>
-          </div>
-        ))}
+        {canvasChildren}
       </InfiniteCanvas>
 
       <AnimatePresence>
