@@ -35,29 +35,75 @@ export default function UploadDropzone({
         // ... (unchanged code) ...
         return new Promise<void>(async (resolve) => {
             try {
-                // 1. Extract EXIF
+                // 1. Extract EXIF and Coordinates
                 let date = file.lastModified;
-                // Basic EXIF extraction (could be enhanced)
-                // @ts-expect-error - EXIF typings do not include File
-                EXIF.getData(file as unknown as HTMLImageElement, function (this: HTMLImageElement) {
-                    const exifDate = EXIF.getTag(this, "DateTimeOriginal") as string | undefined;
-                    if (exifDate) {
+                let lat: number | null = null;
+                let lon: number | null = null;
+                
+                await new Promise<void>((resolveExif) => {
+                    // @ts-expect-error - EXIF typings do not include File
+                    EXIF.getData(file as unknown as HTMLImageElement, function (this: HTMLImageElement) {
                         try {
-                            const [datePart, timePart] = exifDate.split(" ");
-                            const [year, month, day] = datePart.split(":");
-                            const [hour, minute, second] = timePart.split(":");
-                            const y = parseInt(year, 10);
-                            const m = parseInt(month, 10);
-                            const d = parseInt(day, 10);
-                            const hr = parseInt(hour, 10);
-                            const min = parseInt(minute, 10);
-                            const sec = parseInt(second, 10);
-                            date = new Date(y, m - 1, d, hr, min, sec).getTime();
+                            const exifDate = EXIF.getTag(this, "DateTimeOriginal") as string | undefined;
+                            if (exifDate) {
+                                const [datePart, timePart] = exifDate.split(" ");
+                                const [year, month, day] = datePart.split(":");
+                                const [hour, minute, second] = timePart.split(":");
+                                date = new Date(
+                                    parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10),
+                                    parseInt(hour, 10), parseInt(minute, 10), parseInt(second, 10)
+                                ).getTime();
+                            }
+
+                            const gpsLat = EXIF.getTag(this, "GPSLatitude");
+                            const gpsLatRef = EXIF.getTag(this, "GPSLatitudeRef");
+                            const gpsLon = EXIF.getTag(this, "GPSLongitude");
+                            const gpsLonRef = EXIF.getTag(this, "GPSLongitudeRef");
+
+                            if (gpsLat && gpsLatRef && gpsLon && gpsLonRef) {
+                                const latDeg = gpsLat[0].valueOf();
+                                const latMin = gpsLat[1].valueOf();
+                                const latSec = gpsLat[2].valueOf();
+                                const lonDeg = gpsLon[0].valueOf();
+                                const lonMin = gpsLon[1].valueOf();
+                                const lonSec = gpsLon[2].valueOf();
+
+                                lat = latDeg + latMin / 60 + latSec / 3600;
+                                if (gpsLatRef === "S") lat = -lat;
+
+                                lon = lonDeg + lonMin / 60 + lonSec / 3600;
+                                if (gpsLonRef === "W") lon = -lon;
+                            }
                         } catch (e) {
-                            console.warn("Error parsing EXIF date", e);
+                            console.warn("Error parsing EXIF", e);
+                        } finally {
+                            resolveExif();
                         }
-                    }
+                    });
                 });
+
+                let locationString = '';
+                if (lat !== null && lon !== null) {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+                            headers: {
+                                'Accept-Language': 'en-US,en;q=0.9',
+                            }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const addr = data.address;
+                            if (addr) {
+                                const city = addr.city || addr.town || addr.village || addr.county || '';
+                                const state = addr.state || '';
+                                const country = addr.country || '';
+                                locationString = [city, state, country].filter(Boolean).join(', ');
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Reverse geocoding failed", e);
+                    }
+                }
 
                 // 2. Generate Thumbnail (Canvas) - rudimentary resizing
                 const img = new Image();
@@ -139,6 +185,9 @@ export default function UploadDropzone({
                                 width: img.width,
                                 height: img.height,
                                 mimeType: file.type,
+                                exif: {
+                                    location: locationString || undefined
+                                }
                             }
                         };
 
