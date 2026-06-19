@@ -68,11 +68,14 @@ export default function UploadDropzone({
                                 const lonMin = gpsLon[1].valueOf();
                                 const lonSec = gpsLon[2].valueOf();
 
-                                lat = latDeg + latMin / 60 + latSec / 3600;
-                                if (gpsLatRef === "S") lat = -lat;
+                                let calculatedLat = latDeg + latMin / 60 + latSec / 3600;
+                                if (gpsLatRef === "S") calculatedLat = -calculatedLat;
 
-                                lon = lonDeg + lonMin / 60 + lonSec / 3600;
-                                if (gpsLonRef === "W") lon = -lon;
+                                let calculatedLon = lonDeg + lonMin / 60 + lonSec / 3600;
+                                if (gpsLonRef === "W") calculatedLon = -calculatedLon;
+
+                                lat = calculatedLat;
+                                lon = calculatedLon;
                             }
                         } catch (e) {
                             console.warn("Error parsing EXIF", e);
