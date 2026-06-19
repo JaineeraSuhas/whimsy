@@ -273,19 +273,21 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
             />
           </div>
 
-          {/* Metadata text block — matching reference exactly */}
+          {/* Metadata text block */}
           <div className="flex flex-col items-start w-full gap-[2px] mt-1" style={{ fontFamily: "'Roboto Mono', monospace" }}>
             <span className="text-[6px] text-white font-bold leading-[1.3em] w-full whitespace-pre-wrap break-words">
               {card.cleanName || 'Untitled'}
             </span>
-            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-              12 x 6 inch C type hand print
+            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words opacity-80">
+              {card.details}
             </span>
-            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-              Edition of 1 Plus and additional artist Proof
-            </span>
-            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words">
-              2024
+            {card.location && (
+              <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words opacity-60">
+                {card.location}
+              </span>
+            )}
+            <span className="text-[6px] text-white leading-[1.3em] w-full whitespace-pre-wrap break-words opacity-60">
+              {card.formattedYear}
             </span>
           </div>
         </motion.div>
