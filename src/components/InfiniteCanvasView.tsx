@@ -221,17 +221,6 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     };
   }, [photos, dimensions, isMounted]);
 
-  if (!isMounted || photos.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-400 gap-3">
-        <Compass className="w-8 h-8 animate-spin text-zinc-500" />
-        <span className="font-mono text-sm tracking-wide">Assembling memory layout...</span>
-      </div>
-    );
-  }
-
-  const activeCard = activePhotoIndex !== null ? layoutData.cards[activePhotoIndex] : null;
-
   const canvasChildren = useMemo(() => {
     return layoutData.cards.map((card) => (
       <div
@@ -304,6 +293,16 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     ));
   }, [layoutData.cards, onOpenPhoto]);
 
+  if (!isMounted || photos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-zinc-400 gap-3">
+        <Compass className="w-8 h-8 animate-spin text-zinc-500" />
+        <span className="font-mono text-sm tracking-wide">Assembling memory layout...</span>
+      </div>
+    );
+  }
+
+  const activeCard = activePhotoIndex !== null ? layoutData.cards[activePhotoIndex] : null;
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-black">
       {/* Scroll/Drag indicator — reference style */}
