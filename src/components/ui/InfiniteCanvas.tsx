@@ -29,7 +29,7 @@ export interface InfiniteCanvasProps {
   contentHeight?: number;
 }
 
-export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
+export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = React.memo(({
   children,
   scrollSpeed = 0.4,
   dragSpeed = 0.5,
@@ -526,4 +526,4 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({
       {children}
     </div>
   );
-};
+});

@@ -33,10 +33,7 @@ const REFERENCE_LAYOUT = [
   { width: 114, top: 24, left: 83, zIndex: 9, aspect: 0.717901 },
 ];
 
-export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanvasViewProps) {
-  const [dimensions, setDimensions] = useState({ w: 1200, h: 800 });
-  const [isMounted, setIsMounted] = useState(false);
-  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
+function ScrollIndicator() {
   const [showInstruction, setShowInstruction] = useState(true);
 
   // Hide mobile instruction after 5.5s
@@ -44,6 +41,26 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
     const timer = setTimeout(() => setShowInstruction(false), 5500);
     return () => clearTimeout(timer);
   }, []);
+
+  return (
+    <div className={`absolute top-1/2 md:top-auto md:bottom-10 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-y-0 z-[60] pointer-events-none flex items-center justify-center gap-3 transition-opacity duration-[1500ms] w-max whitespace-nowrap ${showInstruction ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
+        <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-blue-700 uppercase">
+        SCROLL/DRAG TO MOVE
+      </span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
+        <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+  );
+}
+
+export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanvasViewProps) {
+  const [dimensions, setDimensions] = useState({ w: 1200, h: 800 });
+  const [isMounted, setIsMounted] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
 
   // Measure window size
   useEffect(() => {
@@ -290,17 +307,7 @@ export default function InfiniteCanvasView({ photos, onOpenPhoto }: InfiniteCanv
   return (
     <div className="relative w-full h-full overflow-hidden select-none bg-black">
       {/* Scroll/Drag indicator — reference style */}
-      <div className={`absolute top-1/2 md:top-auto md:bottom-10 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-y-0 z-[60] pointer-events-none flex items-center justify-center gap-3 transition-opacity duration-[1500ms] w-max whitespace-nowrap ${showInstruction ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
-          <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-blue-700 uppercase">
-          SCROLL/DRAG TO MOVE
-        </span>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-700">
-          <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </div>
+      <ScrollIndicator />
 
       <InfiniteCanvas
         scrollSpeed={0.6}
